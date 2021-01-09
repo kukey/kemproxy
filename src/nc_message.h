@@ -164,6 +164,14 @@ typedef enum msg_parse_result {
     ACTION( REQ_REDIS_ZSCAN)                                                                        \
     ACTION( REQ_REDIS_EVAL )                   /* redis requests - eval */                          \
     ACTION( REQ_REDIS_EVALSHA )                                                                     \
+    ACTION( REQ_REDIS_GEOADD )                 /* redis requests - geo */                           \
+    ACTION( REQ_REDIS_GEODIST )                                                                     \
+    ACTION( REQ_REDIS_GEOHASH )                                                                     \
+    ACTION( REQ_REDIS_GEOPOS )                                                                      \
+    ACTION( REQ_REDIS_GEORADIUS )                                                                   \
+    ACTION( REQ_REDIS_GEORADIUSBYMEMBER )                                                           \
+    ACTION( REQ_REDIS_GEOSEARCH )                                                                   \
+    ACTION( REQ_REDIS_GEOSEARCHSTORE )                                                              \
     ACTION( REQ_REDIS_PING )                   /* redis requests - ping/quit */                     \
     ACTION( REQ_REDIS_QUIT)                                                                         \
     ACTION( REQ_REDIS_AUTH)                                                                         \
