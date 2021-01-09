@@ -3,7 +3,6 @@ import re
 import sys
 import time
 import copy
-import thread
 import socket
 import threading
 import logging
@@ -15,7 +14,7 @@ import random
 import redis
 import json
 import glob
-import commands
+import subprocess
 
 from collections import defaultdict
 from argparse import RawTextHelpFormatter
@@ -61,11 +60,11 @@ def nothrow(ExceptionToCheck=Exception, logger=None):
         def f_retry(*args, **kwargs):
             try:
                 return f(*args, **kwargs)
-            except ExceptionToCheck, e:
+            except e:
                 if logger:
                     logger.info(e)
                 else:
-                    print str(e)
+                    print (e)
         return f_retry  # true decorator
     return deco_retry
 
@@ -82,7 +81,7 @@ def json_decode(j):
 #commands dose not work on windows..
 def system(cmd, log_fun=logging.info):
     if log_fun: log_fun(cmd)
-    r = commands.getoutput(cmd)
+    r = subprocess.getoutput(cmd)
     return r
 
 def shorten(s, l=80):

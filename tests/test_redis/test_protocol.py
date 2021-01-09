@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from common import *
+from test_redis.common import *
 from pprint import pprint
 
 def get_conn():
@@ -61,7 +61,7 @@ def _test_bad(req):
 
     s.sendall(req)
     data = s.recv(10000)
-    print data
+    print(data)
 
     assert('' == s.recv(1000))  # peer is closed
 

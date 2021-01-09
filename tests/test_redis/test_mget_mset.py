@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding: utf-8
 
-from common import *
+from test_redis.common import *
 
 def test_mget_mset(kv=default_kv):
     r = getconn()

@@ -1,4 +1,4 @@
-Python testing facilities for twemproxy, this test suite is based on https://github.com/idning/redis-mgr
+Python testing facilities for kemproxy, this test suite is based on https://github.com/idning/redis-mgr
 
 already add to https://travis-ci.org/idning/twemproxy as travis-ci
 
@@ -9,9 +9,7 @@ usage
 
 1. install dependency::
 
-    pip install nose
-    pip install git+https://github.com/andymccurdy/redis-py.git@2.10.3
-    pip install git+https://github.com/idning/python-memcached.git#egg=memcache
+    pip3 install nose redis python-memcached
 
 2. copy binarys to _binaries/::
 

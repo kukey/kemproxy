@@ -9,6 +9,7 @@ import sys
 
 from utils import *
 import conf
+import stat
 
 class Base:
     '''
@@ -45,7 +46,7 @@ class Base:
         self._gen_control_script()
 
     def _gen_control_script(self):
-        content = file(os.path.join(WORKDIR, 'conf/control.sh')).read()
+        content = open(os.path.join(WORKDIR, 'conf/control.sh')).read()
         content = TT(content, self.args)
 
         control_filename = TT('${path}/${name}_control', self.args)
@@ -53,7 +54,7 @@ class Base:
         fout = open(control_filename, 'w+')
         fout.write(content)
         fout.close()
-        os.chmod(control_filename, 0755)
+        os.chmod(control_filename, stat.S_IRWXU|stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH)
 
     def start(self):
         if self._alive():
@@ -154,7 +155,7 @@ class RedisServer(Base):
         return strstr(self._ping(), 'PONG')
 
     def _gen_conf(self):
-        content = file(os.path.join(WORKDIR, 'conf/redis.conf')).read()
+        content = open(os.path.join(WORKDIR, 'conf/redis.conf')).read()
         content = TT(content, self.args)
         if self.args['auth']:
             content += '\r\nrequirepass %s' % self.args['auth']
@@ -285,9 +286,9 @@ $cluster_name:
             c = telnetlib.Telnet(self.args['host'], self.args['status_port'])
             ret = c.read_all()
             return json_decode(ret)
-        except Exception, e:
+        except Exception as e:
             logging.debug('can not get _info_dict of nutcracker, \
-                          [Exception: %s]' % (e, ))
+                          [Exception: %s]' % (e))
             return None
 
     def reconfig(self, masters):
