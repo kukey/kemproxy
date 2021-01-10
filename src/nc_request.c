@@ -475,6 +475,9 @@ static bool
 req_filter(struct context *ctx, struct conn *conn, struct msg *msg)
 {
     ASSERT(conn->client && !conn->proxy);
+    ASSERT(conn->owner);
+
+    struct server_pool *sp = (struct server_pool*)conn->owner;
 
     if (msg_empty(msg)) {
         ASSERT(conn->rmsg == NULL);
@@ -501,6 +504,15 @@ req_filter(struct context *ctx, struct conn *conn, struct msg *msg)
         conn->recv_ready = 0;
         req_put(msg);
         return true;
+    }
+
+    /* Check the request args limit. */
+    if (sp->request_keys_limit) {
+        if (msg->cralimit
+                && (msg->narg-1) > sp->request_keys_limit) {
+            msg->noforward = 1;
+            msg->nralimit = 1;
+        }
     }
 
     /*

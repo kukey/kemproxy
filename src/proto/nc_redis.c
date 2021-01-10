@@ -28,6 +28,7 @@
     ACTION( invalid_password, "-ERR invalid password\r\n"                         ) \
     ACTION( auth_required,    "-NOAUTH Authentication required\r\n"               ) \
     ACTION( no_password,      "-ERR Client sent AUTH, but no password is set\r\n" ) \
+    ACTION( keys_limit,       "-ERR The number of keys greater than the limit\r\n" ) \
 
 #define DEFINE_ACTION(_var, _str) static struct string rsp_##_var = string(_str);
     RSP_STRING( DEFINE_ACTION )
@@ -278,6 +279,7 @@ redis_argx(struct msg *r)
     case MSG_REQ_REDIS_MGET:
     case MSG_REQ_REDIS_DEL:
     case MSG_REQ_REDIS_UNLINK:
+        r->cralimit = 1;
         return true;
 
     default:
@@ -2757,6 +2759,10 @@ redis_reply(struct msg *r)
 
     if (!conn_authenticated(c_conn)) {
         return msg_append(response, rsp_auth_required.data, rsp_auth_required.len);
+    }
+
+    if (r->nralimit) {
+        return msg_append(response, rsp_keys_limit.data, rsp_keys_limit.len);
     }
 
     switch (r->type) {

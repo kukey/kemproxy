@@ -270,6 +270,8 @@ struct msg {
     unsigned             fdone:1;         /* all fragments are done? */
     unsigned             swallow:1;       /* swallow response? */
     unsigned             redis:1;         /* redis? */
+    unsigned             cralimit:1;      /* check requst args limit? */
+    unsigned             nralimit:1;      /* need request args limit? */
 };
 
 TAILQ_HEAD(msg_tqh, msg);
