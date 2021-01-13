@@ -116,6 +116,7 @@ struct server_pool {
     int64_t            server_retry_timeout; /* server retry timeout in usec */
     uint32_t           server_failure_limit; /* server failure limit */
     uint16_t           request_keys_limit;   /* request keys limit */
+    struct string      rkl_resp;             /* request keys limit response str*/
     struct string      redis_auth;           /* redis_auth password (matches requirepass on redis) */
     unsigned           require_auth;         /* require_auth? */
     unsigned           auto_eject_hosts:1;   /* auto_eject_hosts? */

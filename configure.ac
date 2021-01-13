@@ -1,8 +1,8 @@
 # Define the package version numbers and the bug reporting address
 m4_define([NC_MAJOR], 0)
 m4_define([NC_MINOR], 4)
-m4_define([NC_PATCH], 1)
-m4_define([NC_BUGS], [manj@cs.stanford.edu])
+m4_define([NC_PATCH], 2)
+m4_define([NC_BUGS], [wei.kukey@gmail.com])
 
 # Initialize autoconf
 AC_PREREQ([2.64])

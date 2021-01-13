@@ -56,6 +56,7 @@
 #define CONF_DEFAULT_KETAMA_PORT             11211
 #define CONF_DEFAULT_TCPKEEPALIVE            false
 #define CONF_DEFAULT_REQUEST_KEYS_LIMIT      0
+#define CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR  "-ERR The numbers of the keys greater than"
 
 struct conf_listen {
     struct string   pname;   /* listen: as "hostname:port" */

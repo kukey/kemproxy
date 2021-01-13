@@ -28,7 +28,6 @@
     ACTION( invalid_password, "-ERR invalid password\r\n"                         ) \
     ACTION( auth_required,    "-NOAUTH Authentication required\r\n"               ) \
     ACTION( no_password,      "-ERR Client sent AUTH, but no password is set\r\n" ) \
-    ACTION( keys_limit,       "-ERR The number of keys greater than the limit\r\n" ) \
 
 #define DEFINE_ACTION(_var, _str) static struct string rsp_##_var = string(_str);
     RSP_STRING( DEFINE_ACTION )
@@ -2749,8 +2748,10 @@ redis_reply(struct msg *r)
 {
     struct conn *c_conn;
     struct msg *response = r->peer;
+    struct server_pool *sp = ((struct conn *)(r->owner))->owner;
 
     ASSERT(response != NULL && response->owner != NULL);
+    ASSERT(sp != NULL);
 
     c_conn = response->owner;
     if (r->type == MSG_REQ_REDIS_AUTH) {
@@ -2762,7 +2763,7 @@ redis_reply(struct msg *r)
     }
 
     if (r->nralimit) {
-        return msg_append(response, rsp_keys_limit.data, rsp_keys_limit.len);
+        return msg_append(response, sp->rkl_resp.data, sp->rkl_resp.len);
     }
 
     switch (r->type) {

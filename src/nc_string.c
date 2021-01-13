@@ -192,14 +192,17 @@ _safe_check_longlong(const char *fmt, int32_t * have_longlong)
 }
 
 int
-_safe_vsnprintf(char *to, size_t size, const char *format, va_list ap)
+_safe_vsnprintf(char *to, size_t size, int *parse_done, const char *format, va_list ap)
 {
     char *start = to;
     char *end = start + size - 1;
+    if (parse_done) *parse_done = 1;
+
     for (; *format; ++format) {
         int32_t have_longlong = false;
         if (*format != '%') {
             if (to == end) {    /* end of buffer */
+                if (parse_done) *parse_done = 0;
                 break;
             }
             *to++ = *format;    /* copy ordinary char */
@@ -278,7 +281,46 @@ _safe_snprintf(char *to, size_t n, const char *fmt, ...)
     int result;
     va_list args;
     va_start(args, fmt);
-    result = _safe_vsnprintf(to, n, fmt, args);
+    result = _safe_vsnprintf(to, n, NULL, fmt, args);
     va_end(args);
     return result;
+}
+
+rstatus_t
+string_cat(struct string *s, const char *fmt, ...)
+{
+    char *buf = NULL;
+    size_t buflen = nc_strlen(fmt)*2;
+    int bufstrlen, parse_done;
+
+    buf = nc_alloc(buflen);
+    if (buf == NULL) {
+        return NC_ENOMEM;
+    }
+
+    va_list args, cpy;
+    va_start(args, fmt);
+    while(1) {
+        va_copy(cpy, args);
+        bufstrlen = _safe_vsnprintf(buf, buflen, &parse_done, fmt, cpy);
+        va_end(cpy);
+
+        if (!parse_done) {
+            nc_free(buf);
+            buflen += 256;
+            buf = nc_alloc(buflen);
+            if (buf == NULL) {
+                return NC_ENOMEM;
+            }
+            continue;
+        }
+
+        break;
+    }
+    va_end(args);
+
+    s->len = bufstrlen;
+    s->data = buf;
+
+    return NC_OK;
 }
