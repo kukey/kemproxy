@@ -287,7 +287,7 @@ _safe_snprintf(char *to, size_t n, const char *fmt, ...)
 }
 
 rstatus_t
-string_cat(struct string *s, const char *fmt, ...)
+string_catprintf(struct string *s, const char *fmt, ...)
 {
     char *buf = NULL;
     size_t buflen = nc_strlen(fmt)*2;

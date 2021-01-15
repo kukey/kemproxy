@@ -152,6 +152,6 @@ _nc_strrchr(uint8_t *p, uint8_t *start, uint8_t c)
     return NULL;
 }
 
-rstatus_t string_cat(struct string *s, const char *fmt, ...);
+rstatus_t string_catprintf(struct string *s, const char *fmt, ...);
 
 #endif

@@ -306,7 +306,7 @@ conf_pool_each_transform(void *elem, void *data)
     sp->server_retry_timeout = (int64_t)cp->server_retry_timeout * 1000LL;
     sp->server_failure_limit = (uint32_t)cp->server_failure_limit;
     sp->request_keys_limit = cp->request_keys_limit;
-    string_cat(&sp->rkl_resp, "%s %d\r\n", CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR, sp->request_keys_limit);
+    string_catprintf(&sp->rkl_resp, "%s %d\r\n", CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR, sp->request_keys_limit);
     sp->auto_eject_hosts = cp->auto_eject_hosts ? 1 : 0;
     sp->preconnect = cp->preconnect ? 1 : 0;
 
