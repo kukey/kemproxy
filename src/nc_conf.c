@@ -114,6 +114,10 @@ static struct command conf_commands[] = {
       conf_set_num,
       offsetof(struct conf_pool, request_keys_limit) },
 
+    { string("request_max_value_length"),
+      conf_set_num,
+      offsetof(struct conf_pool, max_rlen) },
+
     null_command
 };
 
@@ -210,6 +214,7 @@ conf_pool_init(struct conf_pool *cp, struct string *name)
     cp->server_retry_timeout = CONF_UNSET_NUM;
     cp->server_failure_limit = CONF_UNSET_NUM;
     cp->request_keys_limit = CONF_UNSET_NUM;
+    cp->max_rlen = CONF_UNSET_NUM;
 
     array_null(&cp->server);
 
@@ -305,8 +310,21 @@ conf_pool_each_transform(void *elem, void *data)
     sp->server_connections = (uint32_t)cp->server_connections;
     sp->server_retry_timeout = (int64_t)cp->server_retry_timeout * 1000LL;
     sp->server_failure_limit = (uint32_t)cp->server_failure_limit;
+
     sp->request_keys_limit = cp->request_keys_limit;
-    string_catprintf(&sp->rkl_resp, "%s %d\r\n", CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR, sp->request_keys_limit);
+    if (sp->request_keys_limit) {
+        string_catprintf(&sp->rkl_resp, "%s %d\r\n", CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR, sp->request_keys_limit);
+    } else {
+        string_init(&sp->rkl_resp);
+    }
+
+    sp->max_rlen = cp->max_rlen;
+    if (sp->max_rlen) {
+        string_catprintf(&sp->mrlen_resp, "%s %d\r\n", CONF_DEFAULT_MAX_RLEN_STR, sp->max_rlen);
+    } else {
+        string_init(&sp->mrlen_resp);
+    }
+
     sp->auto_eject_hosts = cp->auto_eject_hosts ? 1 : 0;
     sp->preconnect = cp->preconnect ? 1 : 0;
 
@@ -1278,6 +1296,10 @@ conf_validate_pool(struct conf *cf, struct conf_pool *cp)
 
     if (cp->request_keys_limit == CONF_UNSET_NUM) {
         cp->request_keys_limit = CONF_DEFAULT_REQUEST_KEYS_LIMIT;
+    }
+
+    if (cp->max_rlen == CONF_UNSET_NUM) {
+        cp->max_rlen = CONF_DEFAULT_MAX_RLEN;
     }
 
     if (!cp->redis && cp->redis_auth.len > 0) {

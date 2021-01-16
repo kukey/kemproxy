@@ -515,6 +515,13 @@ req_filter(struct context *ctx, struct conn *conn, struct msg *msg)
         }
     }
 
+    /* Check the reqeust value length. */
+    if (sp->max_rlen 
+            && msg->max_rlen > sp->max_rlen) {
+        msg->nrlenlimit = 1;
+        msg->noforward = 1;
+    }
+
     /*
      * If this conn is not authenticated, we will mark it as noforward,
      * and handle it in the redis_reply handler.

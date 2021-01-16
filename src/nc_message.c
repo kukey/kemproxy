@@ -258,6 +258,7 @@ done:
     msg->rlen = 0;
     msg->curr_narg = 0;
     msg->integer = 0;
+    msg->max_rlen = 0;
 
     msg->err = 0;
     msg->error = 0;
@@ -270,6 +271,9 @@ done:
     msg->fdone = 0;
     msg->swallow = 0;
     msg->redis = 0;
+    msg->cralimit = 0;
+    msg->nralimit = 0;
+    msg->nrlenlimit = 0;
 
     return msg;
 }

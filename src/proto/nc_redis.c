@@ -1337,6 +1337,9 @@ redis_parse_req(struct msg *r)
             switch (ch) {
             case LF:
                 state = SW_ARG1;
+                if (r->rlen > r->max_rlen) {
+                    r->max_rlen = r->rlen;
+                }
                 break;
 
             default:
@@ -1436,6 +1439,9 @@ redis_parse_req(struct msg *r)
             switch (ch) {
             case LF:
                 state = SW_ARG2;
+                if (r->rlen > r->max_rlen) {
+                    r->max_rlen = r->rlen;
+                }
                 break;
 
             default:
@@ -1567,6 +1573,9 @@ redis_parse_req(struct msg *r)
             switch (ch) {
             case LF:
                 state = SW_ARG3;
+                if (r->rlen > r->max_rlen) {
+                    r->max_rlen = r->rlen;
+                }
                 break;
 
             default:
@@ -1645,6 +1654,9 @@ redis_parse_req(struct msg *r)
             switch (ch) {
             case LF:
                 state = SW_ARGN;
+                if (r->rlen > r->max_rlen) {
+                    r->max_rlen = r->rlen;
+                }
                 break;
 
             default:
@@ -2769,6 +2781,10 @@ redis_reply(struct msg *r)
 
     if (r->nralimit) {
         return msg_append(response, sp->rkl_resp.data, sp->rkl_resp.len);
+    }
+
+    if (r->nrlenlimit) {
+        return msg_append(response, sp->mrlen_resp.data, sp->mrlen_resp.len);
     }
 
     switch (r->type) {

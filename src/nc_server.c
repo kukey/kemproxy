@@ -915,6 +915,8 @@ server_pool_deinit(struct array *server_pool)
             sp->nlive_server = 0;
         }
 
+        string_deinit(&sp->rkl_resp);
+        string_deinit(&sp->mrlen_resp);
         server_deinit(&sp->server);
 
         log_debug(LOG_DEBUG, "deinit pool %"PRIu32" '%.*s'", sp->idx,

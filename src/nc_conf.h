@@ -57,6 +57,8 @@
 #define CONF_DEFAULT_TCPKEEPALIVE            false
 #define CONF_DEFAULT_REQUEST_KEYS_LIMIT      0
 #define CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR  "-ERR The numbers of the keys greater than"
+#define CONF_DEFAULT_MAX_RLEN                0
+#define CONF_DEFAULT_MAX_RLEN_STR            "-ERR The length of the value greater than"
 
 struct conf_listen {
     struct string   pname;   /* listen: as "hostname:port" */
@@ -97,6 +99,7 @@ struct conf_pool {
     int                server_failure_limit;  /* server_failure_limit: */
     struct array       server;                /* servers: conf_server[] */
     int                request_keys_limit;    /* request_keys_limit: */
+    int                max_rlen;              /* request_max_value_length: */
     unsigned           valid:1;               /* valid? */
 };
 

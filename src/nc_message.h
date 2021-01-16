@@ -252,6 +252,7 @@ struct msg {
     uint32_t             rlen;            /* running length in parsing fsa (redis) */
     uint32_t             curr_narg;       /* current parse args */
     uint32_t             integer;         /* integer reply value (redis) */
+    uint32_t             max_rlen;        /* running parse args max rlen(redis) */
 
     struct msg           *frag_owner;     /* owner of fragment message */
     uint32_t             nfrag;           /* # fragment */
@@ -272,6 +273,7 @@ struct msg {
     unsigned             redis:1;         /* redis? */
     unsigned             cralimit:1;      /* check requst args limit? */
     unsigned             nralimit:1;      /* need request args limit? */
+    unsigned             nrlenlimit:1;    /* need request value length limit? */
 };
 
 TAILQ_HEAD(msg_tqh, msg);
