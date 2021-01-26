@@ -21,6 +21,7 @@
 #include <nc_core.h>
 #include <nc_server.h>
 #include <nc_conf.h>
+#include <nc_slowlog.h>
 
 static void
 server_resolve(struct server *server, struct conn *conn)
@@ -918,6 +919,7 @@ server_pool_deinit(struct array *server_pool)
         string_deinit(&sp->rkl_resp);
         string_deinit(&sp->mrlen_resp);
         server_deinit(&sp->server);
+        slowlog_tq_deinit(sp);
 
         log_debug(LOG_DEBUG, "deinit pool %"PRIu32" '%.*s'", sp->idx,
                   sp->name.len, sp->name.data);

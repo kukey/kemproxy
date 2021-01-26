@@ -108,6 +108,16 @@ string_compare(const struct string *s1, const struct string *s2)
     return nc_strncmp(s1->data, s2->data, s1->len);
 }
 
+int
+string_casecompare(const struct string *s1, const struct string *s2)
+{
+    if (s1->len != s2->len) {
+        return s1->len > s2->len ? 1 : -1;
+    }
+
+    return nc_strncasecmp(s1->data, s2->data, s1->len);
+}
+
 static char *
 _safe_utoa(int _base, uint64_t val, char *buf)
 {
@@ -287,7 +297,7 @@ _safe_snprintf(char *to, size_t n, const char *fmt, ...)
 }
 
 rstatus_t
-string_catprintf(struct string *s, const char *fmt, ...)
+string_printf(struct string *s, const char *fmt, ...)
 {
     char *buf = NULL;
     size_t buflen = nc_strlen(fmt)*2;
@@ -319,8 +329,8 @@ string_catprintf(struct string *s, const char *fmt, ...)
     }
     va_end(args);
 
-    s->len = bufstrlen;
-    s->data = buf;
+    s->len = (uint32_t)bufstrlen;
+    s->data = (uint8_t*)buf;
 
     return NC_OK;
 }

@@ -59,7 +59,10 @@
  *            //
  */
 
+TAILQ_HEAD(slog_tqh, slowlog);
+
 typedef uint32_t (*hash_t)(const char *, size_t);
+typedef rstatus_t (*slowlog_t)(struct slog_tqh *);
 
 struct continuum {
     uint32_t index;  /* server index */
@@ -116,9 +119,13 @@ struct server_pool {
     int64_t            server_retry_timeout; /* server retry timeout in usec */
     uint32_t           server_failure_limit; /* server failure limit */
     uint16_t           request_keys_limit;   /* request keys limit */
+    uint16_t           n_slowlog;            /* current slowlog num */
+    uint16_t           max_slowlog;          /* max slowlog num */
+    uint16_t           slowlog_slow_than;    /* slowlog slow than */
     struct string      rkl_resp;             /* request keys limit response str */
     uint32_t           max_rlen;             /* request value max length */
     struct string      mrlen_resp;           /* request value max length str */
+    struct slog_tqh    slowlog_q;            /* slowlog queue header */
     struct string      redis_auth;           /* redis_auth password (matches requirepass on redis) */
     unsigned           require_auth;         /* require_auth? */
     unsigned           auto_eject_hosts:1;   /* auto_eject_hosts? */

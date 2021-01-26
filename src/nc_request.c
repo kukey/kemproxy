@@ -41,6 +41,7 @@ req_log(struct msg *req)
     uint32_t req_len, rsp_len; /* request and response length */
     struct string *req_type;   /* request type string */
     struct keypos *kpos;
+    struct server_pool *sp = ((struct conn*)(req->owner))->owner;
 
     if (log_loggable(LOG_NOTICE) == 0) {
         return;
@@ -53,14 +54,6 @@ req_log(struct msg *req)
 
     /* conn close normally? */
     if (req->mlen == 0) {
-        return;
-    }
-    /*
-     * there is a race scenario where a requests comes in, the log level is not LOG_NOTICE,
-     * and before the response arrives you modify the log level to LOG_NOTICE
-     * using SIGTTIN OR SIGTTOU, then req_log() wouldn't have msg->start_ts set
-     */
-    if (req->start_ts == 0) {
         return;
     }
 
@@ -87,6 +80,13 @@ req_log(struct msg *req)
     peer_str = nc_unresolve_peer_desc(req->owner->sd);
 
     req_type = msg_type_string(req->type);
+
+    if (req->type != MSG_REQ_MC_SLOWLOG && req->type != MSG_REQ_REDIS_SLOWLOG && req_time/1000 > sp->slowlog_slow_than) {
+        struct slowlog *slog = slowlog_get();
+        if (slog != NULL) {
+            slowlog_insert(req, slog, (uint64_t)(req_time/1000), req->start_ts/1000, peer_str, req_type, kpos);
+        }
+    }
 
     log_debug(LOG_NOTICE, "req %"PRIu64" done on c %d req_time %"PRIi64".%03"PRIi64
               " msec type %.*s narg %"PRIu32" req_len %"PRIu32" rsp_len %"PRIu32

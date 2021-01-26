@@ -28,6 +28,8 @@
     ACTION( invalid_password, "-ERR invalid password\r\n"                         ) \
     ACTION( auth_required,    "-NOAUTH Authentication required\r\n"               ) \
     ACTION( no_password,      "-ERR Client sent AUTH, but no password is set\r\n" ) \
+    ACTION( command_err,      "-ERR Command error\r\n" ) \
+    ACTION( null_reply,       "*0\r\n" ) \
 
 #define DEFINE_ACTION(_var, _str) static struct string rsp_##_var = string(_str);
     RSP_STRING( DEFINE_ACTION )
@@ -320,6 +322,19 @@ redis_argeval(struct msg *r)
     case MSG_REQ_REDIS_EVALSHA:
         return true;
 
+    default:
+        break;
+    }
+
+    return false;
+}
+
+static bool
+redis_ncarg(struct msg *r)
+{
+    switch (r->type) {
+    case MSG_REQ_REDIS_SLOWLOG:
+        return true;
     default:
         break;
     }
@@ -973,6 +988,13 @@ redis_parse_req(struct msg *r)
                     break;
                 }
 
+                if (str7icmp(m, 's', 'l', 'o', 'w', 'l', 'o', 'g')) {
+                    r->type = MSG_REQ_REDIS_SLOWLOG;
+                    r->slowlog = 1;
+                    r->noforward = 1;
+                    break;
+                }
+
                 break;
 
             case 8:
@@ -1284,7 +1306,7 @@ redis_parse_req(struct msg *r)
                         goto done;
                     }
                     state = SW_ARG1_LEN;
-                } else if (redis_argx(r)) {
+                } else if (redis_argx(r) || redis_ncarg(r)) {
                     if (r->rnarg == 0) {
                         goto done;
                     }
@@ -2760,6 +2782,55 @@ redis_fragment(struct msg *r, uint32_t ncontinuum, struct msg_tqh *frag_msgq)
     }
 }
 
+static rstatus_t
+redis_handle_slowlog(struct msg *r, struct server_pool *sp)
+{
+    struct msg *response = r->peer;
+    int n, i = 0;
+    struct slowlog *slog;
+    rstatus_t ret;
+    struct string header = null_string;
+
+    struct keypos *sub = array_get(r->keys, 0);
+
+    if (nc_strncasecmp(sub->start, "get", sub->end - sub->start)) {
+        return msg_append(response, rsp_command_err.data, rsp_command_err.len);
+    }
+
+    /* fast return */
+    if (slowlog_empty(sp)) {
+        return msg_append(response, rsp_null_reply.data, rsp_null_reply.len);
+    }
+
+    struct keypos *nlog = array_get(r->keys, 1);
+    n = nc_atoi(nlog->start, (nlog->end - nlog->start));
+    if (n > sp->n_slowlog) {
+        n = sp->n_slowlog;
+    }
+
+    /* append header */
+    string_printf(&header, "*%d\r\n", n);
+    ret = msg_append_full(response, header.data, header.len);
+    if (ret != NC_OK) {
+        string_deinit(&header);
+        return ret;
+    }
+
+    TAILQ_FOREACH(slog, &sp->slowlog_q, slowlog_tqe) {
+        if (i >= n) break;
+        if (string_empty(&slog->slowlog_str)) {
+            ret = redis_slowlog_str(slog);
+            if (ret != NC_OK) break;
+        }
+        ret = msg_append_full(response, slog->slowlog_str.data, slog->slowlog_str.len);
+        if (ret != NC_OK) break;
+        ++i;
+    }
+
+    string_deinit(&header);
+    return ret;
+}
+
 rstatus_t
 redis_reply(struct msg *r)
 {
@@ -2790,6 +2861,8 @@ redis_reply(struct msg *r)
     switch (r->type) {
     case MSG_REQ_REDIS_PING:
         return msg_append(response, rsp_pong.data, rsp_pong.len);
+    case MSG_REQ_REDIS_SLOWLOG:
+        return redis_handle_slowlog(r, sp);
 
     default:
         NOT_REACHED();
@@ -3041,4 +3114,20 @@ redis_swallow_msg(struct conn *conn, struct msg *pmsg, struct msg *msg)
                  conn_pool->redis_db, conn_pool->name.data,
                  conn_server->name.data, message);
     }
+}
+
+rstatus_t
+redis_slowlog_str(struct slowlog *slog)
+{
+    return string_printf(&slog->slowlog_str,
+            "*7\r\n:%lld\r\n:%lld\r\n:%lld\r\n$%d\r\n%s\r\n"
+            "$%d\r\n%s\r\n$%d\r\n%s\r\n:%u\r\n",
+            slog->id,
+            slog->time,
+            slog->duration,
+            slog->iport.len, slog->iport.data,
+            slog->req_type.len, slog->req_type.data, 
+            slog->key0.len, slog->key0.data, 
+            slog->req_nargs);
+
 }

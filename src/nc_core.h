@@ -116,6 +116,7 @@ struct event_base;
 #include <nc_mbuf.h>
 #include <nc_message.h>
 #include <nc_connection.h>
+#include <nc_slowlog.h>
 #include <nc_server.h>
 
 struct context {

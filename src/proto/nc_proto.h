@@ -19,6 +19,7 @@
 #define _NC_PROTO_H_
 
 #include <nc_core.h>
+#include <nc_slowlog.h>
 
 #ifdef NC_LITTLE_ENDIAN
 
@@ -163,5 +164,7 @@ rstatus_t redis_fragment(struct msg *r, uint32_t ncontinuum, struct msg_tqh *fra
 rstatus_t redis_reply(struct msg *r);
 void redis_post_connect(struct context *ctx, struct conn *conn, struct server *server);
 void redis_swallow_msg(struct conn *conn, struct msg *pmsg, struct msg *msg);
+struct string *redis_slowlog(struct slog_tqh *tqh);
+rstatus_t redis_slowlog_str(struct slowlog *slog);
 
 #endif

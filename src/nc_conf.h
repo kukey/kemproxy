@@ -59,6 +59,8 @@
 #define CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR  "-ERR The numbers of the keys greater than"
 #define CONF_DEFAULT_MAX_RLEN                0
 #define CONF_DEFAULT_MAX_RLEN_STR            "-ERR The length of the value greater than"
+#define CONF_DEFAULT_SLOWLOG_MAX_LEN         128
+#define CONF_DEFAULT_SLOWLOG_SLOW_THAN       10
 
 struct conf_listen {
     struct string   pname;   /* listen: as "hostname:port" */
@@ -100,6 +102,8 @@ struct conf_pool {
     struct array       server;                /* servers: conf_server[] */
     int                request_keys_limit;    /* request_keys_limit: */
     int                max_rlen;              /* request_max_value_length: */
+    int                slowlog_max_len;       /* slowlog_max_len: */
+    int                slowlog_slow_than;     /* slowlog_slow_than: */
     unsigned           valid:1;               /* valid? */
 };
 

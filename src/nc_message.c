@@ -317,9 +317,7 @@ msg_get(struct conn *conn, bool request, bool redis)
         msg->post_coalesce = memcache_post_coalesce;
     }
 
-    if (log_loggable(LOG_NOTICE) != 0) {
-        msg->start_ts = nc_usec_now();
-    }
+    msg->start_ts = nc_usec_now();
 
     log_debug(LOG_VVERB, "get msg %p id %"PRIu64" request %d owner sd %d",
               msg, msg->id, msg->request, conn->sd);
@@ -506,6 +504,32 @@ msg_append(struct msg *msg, uint8_t *pos, size_t n)
 
     mbuf_copy(mbuf, pos, n);
     msg->mlen += (uint32_t)n;
+
+    return NC_OK;
+}
+
+rstatus_t
+msg_append_full(struct msg *msg, uint8_t *pos, size_t n)
+{
+    struct mbuf *mbuf = NULL;
+    size_t cidx = 0;
+    size_t mbsize = 0;
+    size_t clen = 0;
+
+    do {
+        mbuf = msg_ensure_mbuf(msg, n);
+        if (mbuf == NULL) {
+            return NC_ENOMEM;
+        }
+
+        mbsize = mbuf_size(mbuf);
+
+        clen = n > mbsize ? mbsize : n;
+        mbuf_copy(mbuf, pos+cidx, clen);
+        cidx += clen;
+        msg->mlen += (uint32_t)clen;
+        n -= clen;
+    } while(n);
 
     return NC_OK;
 }

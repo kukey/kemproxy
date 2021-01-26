@@ -118,6 +118,14 @@ static struct command conf_commands[] = {
       conf_set_num,
       offsetof(struct conf_pool, max_rlen) },
 
+    { string("slowlog_max_len"),
+      conf_set_num,
+      offsetof(struct conf_pool, slowlog_max_len) },
+
+    { string("slowlog_slow_than"),
+      conf_set_num,
+      offsetof(struct conf_pool, slowlog_slow_than) },
+
     null_command
 };
 
@@ -215,6 +223,8 @@ conf_pool_init(struct conf_pool *cp, struct string *name)
     cp->server_failure_limit = CONF_UNSET_NUM;
     cp->request_keys_limit = CONF_UNSET_NUM;
     cp->max_rlen = CONF_UNSET_NUM;
+    cp->slowlog_max_len = CONF_UNSET_NUM;
+    cp->slowlog_slow_than = CONF_UNSET_NUM;
 
     array_null(&cp->server);
 
@@ -313,17 +323,21 @@ conf_pool_each_transform(void *elem, void *data)
 
     sp->request_keys_limit = cp->request_keys_limit;
     if (sp->request_keys_limit) {
-        string_catprintf(&sp->rkl_resp, "%s %d\r\n", CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR, sp->request_keys_limit);
+        string_printf(&sp->rkl_resp, "%s %d\r\n", CONF_DEFAULT_REQUEST_KEYS_LIMIT_STR, sp->request_keys_limit);
     } else {
         string_init(&sp->rkl_resp);
     }
 
     sp->max_rlen = cp->max_rlen;
     if (sp->max_rlen) {
-        string_catprintf(&sp->mrlen_resp, "%s %d\r\n", CONF_DEFAULT_MAX_RLEN_STR, sp->max_rlen);
+        string_printf(&sp->mrlen_resp, "%s %d\r\n", CONF_DEFAULT_MAX_RLEN_STR, sp->max_rlen);
     } else {
         string_init(&sp->mrlen_resp);
     }
+
+    sp->n_slowlog = 0;
+    sp->max_slowlog = (uint16_t)cp->slowlog_max_len;
+    TAILQ_INIT(&sp->slowlog_q);
 
     sp->auto_eject_hosts = cp->auto_eject_hosts ? 1 : 0;
     sp->preconnect = cp->preconnect ? 1 : 0;
@@ -1300,6 +1314,14 @@ conf_validate_pool(struct conf *cf, struct conf_pool *cp)
 
     if (cp->max_rlen == CONF_UNSET_NUM) {
         cp->max_rlen = CONF_DEFAULT_MAX_RLEN;
+    }
+
+    if (cp->slowlog_max_len == CONF_UNSET_NUM) {
+        cp->slowlog_max_len = CONF_DEFAULT_SLOWLOG_MAX_LEN;
+    }
+
+    if (cp->slowlog_slow_than == CONF_UNSET_NUM) {
+        cp->slowlog_slow_than = CONF_DEFAULT_SLOWLOG_SLOW_THAN;
     }
 
     if (!cp->redis && cp->redis_auth.len > 0) {

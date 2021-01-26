@@ -49,6 +49,7 @@ typedef enum msg_parse_result {
     ACTION( REQ_MC_DECR )                                                                           \
     ACTION( REQ_MC_TOUCH )                     /* memcache touch request */                         \
     ACTION( REQ_MC_QUIT )                      /* memcache quit request */                          \
+    ACTION( REQ_MC_SLOWLOG )                   /* memcache slowlog */                               \
     ACTION( RSP_MC_NUM )                       /* memcache arithmetic response */                   \
     ACTION( RSP_MC_STORED )                    /* memcache cas and storage response */              \
     ACTION( RSP_MC_NOT_STORED )                                                                     \
@@ -176,6 +177,7 @@ typedef enum msg_parse_result {
     ACTION( REQ_REDIS_QUIT)                                                                         \
     ACTION( REQ_REDIS_AUTH)                                                                         \
     ACTION( REQ_REDIS_SELECT)                  /* only during init */                               \
+    ACTION( REQ_REDIS_SLOWLOG)                 /* redis slowlog */                                  \
     ACTION( RSP_REDIS_STATUS )                 /* redis response */                                 \
     ACTION( RSP_REDIS_ERROR )                                                                       \
     ACTION( RSP_REDIS_ERROR_ERR )                                                                   \
@@ -274,6 +276,7 @@ struct msg {
     unsigned             cralimit:1;      /* check requst args limit? */
     unsigned             nralimit:1;      /* need request args limit? */
     unsigned             nrlenlimit:1;    /* need request value length limit? */
+    unsigned             slowlog:1;       /* slowlog command */
 };
 
 TAILQ_HEAD(msg_tqh, msg);
@@ -296,6 +299,7 @@ uint64_t msg_gen_frag_id(void);
 uint32_t msg_backend_idx(struct msg *msg, uint8_t *key, uint32_t keylen);
 struct mbuf *msg_ensure_mbuf(struct msg *msg, size_t len);
 rstatus_t msg_append(struct msg *msg, uint8_t *pos, size_t n);
+rstatus_t msg_append_full(struct msg *msg, uint8_t *pos, size_t n);
 rstatus_t msg_prepend(struct msg *msg, uint8_t *pos, size_t n);
 rstatus_t msg_prepend_format(struct msg *msg, const char *fmt, ...);
 

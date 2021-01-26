@@ -48,6 +48,7 @@ bool string_empty(const struct string *str);
 rstatus_t string_duplicate(struct string *dst, const struct string *src);
 rstatus_t string_copy(struct string *dst, const uint8_t *src, uint32_t srclen);
 int string_compare(const struct string *s1, const struct string *s2);
+int string_casecompare(const struct string *s1, const struct string *s2);
 
 /*
  * Wrapper around common routines for manipulating C character
@@ -67,6 +68,9 @@ int string_compare(const struct string *s1, const struct string *s2);
 
 #define nc_strncmp(_s1, _s2, _n)        \
     strncmp((char *)(_s1), (char *)(_s2), (size_t)(_n))
+
+#define nc_strncasecmp(_s1, _s2, _n)        \
+    strncasecmp((char *)(_s1), (char *)(_s2), (size_t)(_n))
 
 #define nc_strchr(_p, _l, _c)           \
     _nc_strchr((uint8_t *)(_p), (uint8_t *)(_l), (uint8_t)(_c))
@@ -152,6 +156,6 @@ _nc_strrchr(uint8_t *p, uint8_t *start, uint8_t c)
     return NULL;
 }
 
-rstatus_t string_catprintf(struct string *s, const char *fmt, ...);
+rstatus_t string_printf(struct string *s, const char *fmt, ...);
 
 #endif
