@@ -228,6 +228,7 @@ rsp_forward_stats(struct context *ctx, struct server *server, struct msg *msg, u
 
     stats_server_incr(ctx, server, responses);
     stats_server_incr_by(ctx, server, response_bytes, msgsize);
+    incr_total_response(msgsize);
 }
 
 static void

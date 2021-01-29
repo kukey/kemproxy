@@ -111,6 +111,11 @@ struct stats {
     struct string       timestamp_str;   /* timestamp string */
     struct string       ntotal_conn_str; /* total connections string */
     struct string       ncurr_conn_str;  /* curr connections string */
+    struct string       total_request_str;   /* total request string */
+    struct string       total_request_bytes_str;   /* total request bytes string */
+    struct string       total_response_str;   /* total response string */
+    struct string       total_response_bytes_str;   /* total response bytes string */
+    struct string       pid_str;         /* pid string */
 
     volatile int        aggregate;       /* shadow (b) aggregate? */
     volatile int        updated;         /* current (a) updated? */
@@ -211,5 +216,8 @@ void _stats_server_set_ts(struct context *ctx, struct server *server, stats_serv
 struct stats *stats_create(uint16_t stats_port, char *stats_ip, int stats_interval, char *source, struct array *server_pool);
 void stats_destroy(struct stats *stats);
 void stats_swap(struct stats *stats);
+
+void incr_total_request(uint32_t len);
+void incr_total_response(uint32_t len);
 
 #endif

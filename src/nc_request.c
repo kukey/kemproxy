@@ -569,6 +569,8 @@ req_forward_stats(struct context *ctx, struct server *server, struct msg *msg)
 
     stats_server_incr(ctx, server, requests);
     stats_server_incr_by(ctx, server, request_bytes, msg->mlen);
+    incr_total_request(msg->mlen);
+
 }
 
 static void

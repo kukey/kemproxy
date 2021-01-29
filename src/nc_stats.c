@@ -26,6 +26,12 @@
 #include <nc_core.h>
 #include <nc_server.h>
 
+static uint64_t total_request = 0;
+static uint64_t total_request_bytes = 0;
+
+static uint64_t total_response = 0;
+static uint64_t total_response_bytes = 0;
+
 struct stats_desc {
     char *name; /* stats name */
     char *desc; /* stats description */
@@ -326,6 +332,8 @@ stats_pool_unmap(struct array *stats_pool)
     log_debug(LOG_VVVERB, "unmap %"PRIu32" stats pool", npool);
 }
 
+#define pid_max_digits 7
+
 static rstatus_t
 stats_create_buf(struct stats *st)
 {
@@ -366,6 +374,26 @@ stats_create_buf(struct stats *st)
     size += key_value_extra;
 
     size += st->ncurr_conn_str.len;
+    size += int64_max_digits;
+    size += key_value_extra;
+
+    size += st->pid_str.len;
+    size += pid_max_digits;
+    size += key_value_extra;
+
+    size += st->total_request_str.len;
+    size += int64_max_digits;
+    size += key_value_extra;
+
+    size += st->total_request_bytes_str.len;
+    size += int64_max_digits;
+    size += key_value_extra;
+
+    size += st->total_response_str.len;
+    size += int64_max_digits;
+    size += key_value_extra;
+
+    size += st->total_response_bytes_str.len;
     size += int64_max_digits;
     size += key_value_extra;
 
@@ -522,6 +550,31 @@ stats_add_header(struct stats *st)
     }
 
     status = stats_add_num(st, &st->ncurr_conn_str, conn_ncurr_conn());
+    if (status != NC_OK) {
+        return status;
+    }
+
+    status = stats_add_num(st, &st->pid_str, (int64_t)getpid());
+    if (status != NC_OK) {
+        return status;
+    }
+
+    status = stats_add_num(st, &st->total_request_str, (int64_t)total_request);
+    if (status != NC_OK) {
+        return status;
+    }
+
+    status = stats_add_num(st, &st->total_request_bytes_str, (int64_t)total_request_bytes);
+    if (status != NC_OK) {
+        return status;
+    }
+
+    status = stats_add_num(st, &st->total_response_str, (int64_t)total_response);
+    if (status != NC_OK) {
+        return status;
+    }
+
+    status = stats_add_num(st, &st->total_response_bytes_str, (int64_t)total_response_bytes);
     if (status != NC_OK) {
         return status;
     }
@@ -930,6 +983,12 @@ stats_create(uint16_t stats_port, char *stats_ip, int stats_interval,
     string_set_text(&st->ntotal_conn_str, "total_connections");
     string_set_text(&st->ncurr_conn_str, "curr_connections");
 
+    string_set_text(&st->pid_str, "pid");
+    string_set_text(&st->total_request_str, "total_request");
+    string_set_text(&st->total_request_bytes_str, "total_request_bytes");
+    string_set_text(&st->total_response_str, "total_response");
+    string_set_text(&st->total_response_bytes_str, "total_response_bytes");
+
     st->updated = 0;
     st->aggregate = 0;
 
@@ -1209,4 +1268,14 @@ _stats_server_set_ts(struct context *ctx, struct server *server,
 
     log_debug(LOG_VVVERB, "set ts field '%.*s' to %"PRId64"", stm->name.len,
               stm->name.data, stm->value.timestamp);
+} 
+
+void incr_total_request(uint32_t len) {
+    ++total_request;
+    total_request_bytes += len;
+}
+
+void incr_total_response(uint32_t len) {
+    ++total_response;
+    total_response_bytes += len;
 }
