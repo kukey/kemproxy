@@ -28,8 +28,9 @@
     ACTION( invalid_password, "-ERR invalid password\r\n"                         ) \
     ACTION( auth_required,    "-NOAUTH Authentication required\r\n"               ) \
     ACTION( no_password,      "-ERR Client sent AUTH, but no password is set\r\n" ) \
-    ACTION( command_err,      "-ERR Command error\r\n" ) \
-    ACTION( null_reply,       "*0\r\n" ) \
+    ACTION( command_err,      "-ERR Command error\r\n"                            ) \
+    ACTION( null_reply,       "*0\r\n"                                            ) \
+    ACTION( unsupport_command,"-ERR Unknow Command\r\n"                           ) \
 
 #define DEFINE_ACTION(_var, _str) static struct string rsp_##_var = string(_str);
     RSP_STRING( DEFINE_ACTION )
@@ -325,6 +326,15 @@ redis_argeval(struct msg *r)
     default:
         break;
     }
+
+    return false;
+}
+
+static bool
+redis_unkonw_command(struct msg *r)
+{
+    if (r->type == MSG_UNKNOWN)
+        return true;
 
     return false;
 }
@@ -1175,7 +1185,8 @@ redis_parse_req(struct msg *r)
 
             if (r->type == MSG_UNKNOWN) {
                 log_error("parsed unsupported command '%.*s'", p - m, m);
-                goto error;
+                r->noforward = 1;
+                // goto error;
             }
 
             log_debug(LOG_VERB, "parsed command '%.*s'", p - m, m);
@@ -1317,6 +1328,11 @@ redis_parse_req(struct msg *r)
                     }
                     state = SW_ARG1_LEN;
                 } else if (redis_argeval(r)) {
+                    if (r->rnarg == 0) {
+                        goto done;
+                    }
+                    state = SW_ARGN_LEN;
+                } else if (redis_unkonw_command(r)) {
                     if (r->rnarg == 0) {
                         goto done;
                     }
@@ -1709,7 +1725,7 @@ redis_parse_req(struct msg *r)
         case SW_ARGN_LF:
             switch (ch) {
             case LF:
-                if (redis_argn(r) || redis_argeval(r)) {
+                if (redis_argn(r) || redis_argeval(r) || redis_unkonw_command(r)) {
                     if (r->rnarg == 0) {
                         goto done;
                     }
@@ -2863,6 +2879,8 @@ redis_reply(struct msg *r)
         return msg_append(response, rsp_pong.data, rsp_pong.len);
     case MSG_REQ_REDIS_SLOWLOG:
         return redis_handle_slowlog(r, sp);
+    case MSG_UNKNOWN:
+        return msg_append(response, rsp_unsupport_command.data, rsp_unsupport_command.len);
 
     default:
         NOT_REACHED();
