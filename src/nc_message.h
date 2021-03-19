@@ -263,6 +263,7 @@ struct msg {
     struct msg           **frag_seq;      /* sequence of fragment message, map from keys to fragments*/
 
     err_t                err;             /* errno on error? */
+    void                 *err_extra;      /* err extr info */
     unsigned             error:1;         /* error? */
     unsigned             ferror:1;        /* one or more fragments are in error? */
     unsigned             request:1;       /* request? or response? */
@@ -277,6 +278,9 @@ struct msg {
     unsigned             nralimit:1;      /* need request args limit? */
     unsigned             nrlenlimit:1;    /* need request value length limit? */
     unsigned             slowlog:1;       /* slowlog command */
+    unsigned             errorserverinq:1;     /* when error msg is in in_q? */
+    unsigned             errorserveroutq:1;    /* when error msg is in out_q? */
+    unsigned             errextra:1;      /* is having extra err info? */
 };
 
 TAILQ_HEAD(msg_tqh, msg);
@@ -290,7 +294,7 @@ void msg_deinit(void);
 struct string *msg_type_string(msg_type_t type);
 struct msg *msg_get(struct conn *conn, bool request, bool redis);
 void msg_put(struct msg *msg);
-struct msg *msg_get_error(bool redis, err_t err);
+struct msg *msg_get_error(struct context *ctx, struct conn *conn, struct msg *m);
 void msg_dump(struct msg *msg, int level);
 bool msg_empty(struct msg *msg);
 rstatus_t msg_recv(struct context *ctx, struct conn *conn);
@@ -325,5 +329,7 @@ struct msg *rsp_recv_next(struct context *ctx, struct conn *conn, bool alloc);
 void rsp_recv_done(struct context *ctx, struct conn *conn, struct msg *msg, struct msg *nmsg);
 struct msg *rsp_send_next(struct context *ctx, struct conn *conn);
 void rsp_send_done(struct context *ctx, struct conn *conn, struct msg *msg);
+
+void msg_server_err_extra(struct conn *conn, bool is_inq, struct msg *m);
 
 #endif

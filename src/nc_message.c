@@ -326,13 +326,17 @@ msg_get(struct conn *conn, bool request, bool redis)
 }
 
 struct msg *
-msg_get_error(bool redis, err_t err)
+msg_get_error(struct context *ctx, struct conn *conn, struct msg *m)
 {
     struct msg *msg;
     struct mbuf *mbuf;
     int n;
-    char *errstr = err ? strerror(err) : "unknown";
-    char *protstr = redis ? "-ERR" : "SERVER_ERROR";
+
+    struct instance *inst = ctx->owner;
+    struct server_pool *sp = conn->owner;
+
+    char *errstr = m->err ? strerror(m->err) : "unknown";
+    char *protstr = conn->redis ? "-ERR" : "SERVER_ERROR";
 
     msg = _msg_get();
     if (msg == NULL) {
@@ -349,9 +353,23 @@ msg_get_error(bool redis, err_t err)
     }
     mbuf_insert(&msg->mhdr, mbuf);
 
-    n = nc_scnprintf(mbuf->last, mbuf_size(mbuf), "%s %s"CRLF, protstr, errstr);
-    mbuf->last += n;
-    msg->mlen = (uint32_t)n;
+    if (m->errextra) {
+        n = nc_scnprintf(mbuf->last, mbuf_size(mbuf), "%s %s [extra] %s:%d %s ", protstr, errstr,
+                         inst->hostname, sp->port, m->errorserverinq ? "inq" : "outq");
+        mbuf->last += n;
+        msg->mlen = (uint32_t)n;
+
+        if (m->err == ETIMEDOUT && (m->errorserverinq || m->errorserveroutq)) {
+            struct string *extra = m->err_extra;
+            msg_append_full(msg, extra->data, extra->len);
+        }
+
+        msg_append_full(msg, (uint8_t *)"\r\n", 2);
+    } else {
+        n = nc_scnprintf(mbuf->last, mbuf_size(mbuf), "%s %s"CRLF, protstr, errstr);
+        mbuf->last += n;
+        msg->mlen = (uint32_t)n;
+    }
 
     log_debug(LOG_VVERB, "get msg %p id %"PRIu64" len %"PRIu32" error '%s'",
               msg, msg->id, msg->mlen, errstr);
@@ -916,4 +934,19 @@ msg_send(struct context *ctx, struct conn *conn)
     } while (conn->send_ready);
 
     return NC_OK;
+}
+
+void
+msg_server_err_extra(struct conn *conn, bool is_inq, struct msg *m)
+{
+    ASSERT(!conn->client && !conn->proxy);
+
+    m->errorserverinq = is_inq ? 1 : 0;
+    m->errorserveroutq = !(m->errorserverinq);
+
+    if (m->err == ETIMEDOUT) {
+        m->errextra = 1;
+        struct server *s = conn->owner;
+        m->err_extra = &(s->name);
+    }
 }

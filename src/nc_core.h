@@ -121,6 +121,8 @@ struct event_base;
 
 struct context {
     uint32_t           id;          /* unique context id */
+    void               *owner;      /* context owner -> instance */
+
     struct conf        *cf;         /* configuration */
     struct stats       *stats;      /* stats */
 

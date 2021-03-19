@@ -56,6 +56,7 @@ core_ctx_create(struct instance *nci)
         return NULL;
     }
     ctx->id = ++ctx_id;
+    ctx->owner = nci;
     ctx->cf = NULL;
     ctx->stats = NULL;
     ctx->evb = NULL;
