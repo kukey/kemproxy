@@ -334,3 +334,28 @@ string_printf(struct string *s, const char *fmt, ...)
 
     return NC_OK;
 }
+
+rstatus_t string_cat_len(struct string *dst, uint8_t *data, uint32_t len) {
+    if (len == 0) {
+        return NC_OK;
+    }
+
+    uint8_t *buf = dst->data;
+    uint32_t newlen = dst->len + len + 1;
+
+    buf = nc_realloc(dst->data, newlen);
+    if (buf == NULL) {
+        return NC_ENOMEM;
+    }
+
+    nc_memcpy(buf + dst->len, data, len);
+    buf[newlen-1] = '\0';
+    dst->len = newlen-1;
+    dst->data = buf;
+
+    return NC_OK;
+}
+
+rstatus_t string_cat(struct string *dst, struct string *src) {
+    return string_cat_len(dst, src->data, src->len);
+}

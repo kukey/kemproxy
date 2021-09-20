@@ -274,6 +274,7 @@ done:
     msg->cralimit = 0;
     msg->nralimit = 0;
     msg->nrlenlimit = 0;
+    msg->monitor = 0;
 
     return msg;
 }

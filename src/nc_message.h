@@ -178,6 +178,7 @@ typedef enum msg_parse_result {
     ACTION( REQ_REDIS_AUTH)                                                                         \
     ACTION( REQ_REDIS_SELECT)                  /* only during init */                               \
     ACTION( REQ_REDIS_SLOWLOG)                 /* redis slowlog */                                  \
+    ACTION( REQ_REDIS_MONITOR)                 /* redis monitor */                                  \
     ACTION( RSP_REDIS_STATUS )                 /* redis response */                                 \
     ACTION( RSP_REDIS_ERROR )                                                                       \
     ACTION( RSP_REDIS_ERROR_ERR )                                                                   \
@@ -281,6 +282,7 @@ struct msg {
     unsigned             errorserverinq:1;     /* when error msg is in in_q? */
     unsigned             errorserveroutq:1;    /* when error msg is in out_q? */
     unsigned             errextra:1;      /* is having extra err info? */
+    unsigned             monitor:1;       /* is monitor? */
 };
 
 TAILQ_HEAD(msg_tqh, msg);

@@ -22,18 +22,18 @@
 #include <nc_core.h>
 #include <nc_proto.h>
 
-#define RSP_STRING(ACTION)                                                          \
-    ACTION( ok,               "+OK\r\n"                                           ) \
-    ACTION( pong,             "+PONG\r\n"                                         ) \
-    ACTION( invalid_password, "-ERR invalid password\r\n"                         ) \
-    ACTION( auth_required,    "-NOAUTH Authentication required\r\n"               ) \
-    ACTION( no_password,      "-ERR Client sent AUTH, but no password is set\r\n" ) \
-    ACTION( command_err,      "-ERR Command error\r\n"                            ) \
-    ACTION( null_reply,       "*0\r\n"                                            ) \
-    ACTION( unsupport_command,"-ERR Unknow Command\r\n"                           ) \
+#define RSP_STRING(ACTION)                                                   \
+    ACTION(ok, "+OK\r\n")                                                    \
+    ACTION(pong, "+PONG\r\n")                                                \
+    ACTION(invalid_password, "-ERR invalid password\r\n")                    \
+    ACTION(auth_required, "-NOAUTH Authentication required\r\n")             \
+    ACTION(no_password, "-ERR Client sent AUTH, but no password is set\r\n") \
+    ACTION(command_err, "-ERR Command error\r\n")                            \
+    ACTION(null_reply, "*0\r\n")                                             \
+    ACTION(unsupport_command, "-ERR Unknow Command\r\n")
 
 #define DEFINE_ACTION(_var, _str) static struct string rsp_##_var = string(_str);
-    RSP_STRING( DEFINE_ACTION )
+RSP_STRING(DEFINE_ACTION)
 #undef DEFINE_ACTION
 
 static rstatus_t redis_handle_auth_req(struct msg *request, struct msg *response);
@@ -45,9 +45,11 @@ static rstatus_t redis_handle_auth_req(struct msg *request, struct msg *response
 static bool
 redis_argz(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_PING:
     case MSG_REQ_REDIS_QUIT:
+    case MSG_REQ_REDIS_MONITOR:
         return true;
 
     default:
@@ -64,7 +66,8 @@ redis_argz(struct msg *r)
 static bool
 redis_arg0(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_EXISTS:
     case MSG_REQ_REDIS_PERSIST:
     case MSG_REQ_REDIS_PTTL:
@@ -108,7 +111,8 @@ redis_arg0(struct msg *r)
 static bool
 redis_arg1(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_EXPIRE:
     case MSG_REQ_REDIS_EXPIREAT:
     case MSG_REQ_REDIS_PEXPIRE:
@@ -151,7 +155,8 @@ redis_arg1(struct msg *r)
 static bool
 redis_arg2(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_GETRANGE:
     case MSG_REQ_REDIS_PSETEX:
     case MSG_REQ_REDIS_SETBIT:
@@ -194,7 +199,8 @@ redis_arg2(struct msg *r)
 static bool
 redis_arg3(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_LINSERT:
         return true;
 
@@ -212,7 +218,8 @@ redis_arg3(struct msg *r)
 static bool
 redis_argn(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_SORT:
 
     case MSG_REQ_REDIS_BITCOUNT:
@@ -277,7 +284,8 @@ redis_argn(struct msg *r)
 static bool
 redis_argx(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_MGET:
     case MSG_REQ_REDIS_DEL:
     case MSG_REQ_REDIS_UNLINK:
@@ -298,7 +306,8 @@ redis_argx(struct msg *r)
 static bool
 redis_argkvx(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_MSET:
         return true;
 
@@ -318,7 +327,8 @@ redis_argkvx(struct msg *r)
 static bool
 redis_argeval(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_EVAL:
     case MSG_REQ_REDIS_EVALSHA:
         return true;
@@ -342,7 +352,8 @@ redis_unkonw_command(struct msg *r)
 static bool
 redis_ncarg(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_SLOWLOG:
         return true;
     default:
@@ -359,7 +370,8 @@ redis_ncarg(struct msg *r)
 static bool
 redis_error(struct msg *r)
 {
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_RSP_REDIS_ERROR:
     case MSG_RSP_REDIS_ERROR_ERR:
     case MSG_RSP_REDIS_ERROR_OOM:
@@ -407,13 +419,13 @@ redis_error(struct msg *r)
  *
  * Nutcracker only supports the Redis unified protocol for requests.
  */
-void
-redis_parse_req(struct msg *r)
+void redis_parse_req(struct msg *r)
 {
     struct mbuf *b;
     uint8_t *p, *m;
     uint8_t ch;
-    enum {
+    enum
+    {
         SW_START,
         SW_NARG,
         SW_NARG_LF,
@@ -456,15 +468,19 @@ redis_parse_req(struct msg *r)
     ASSERT(r->pos != NULL);
     ASSERT(r->pos >= b->pos && r->pos <= b->last);
 
-    for (p = r->pos; p < b->last; p++) {
+    for (p = r->pos; p < b->last; p++)
+    {
         ch = *p;
 
-        switch (state) {
+        switch (state)
+        {
 
         case SW_START:
         case SW_NARG:
-            if (r->token == NULL) {
-                if (ch != '*') {
+            if (r->token == NULL)
+            {
+                if (ch != '*')
+                {
                     goto error;
                 }
                 r->token = p;
@@ -472,24 +488,32 @@ redis_parse_req(struct msg *r)
                 r->narg_start = p;
                 r->rnarg = 0;
                 state = SW_NARG;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rnarg = r->rnarg * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if (r->rnarg == 0) {
+            }
+            else if (ch == CR)
+            {
+                if (r->rnarg == 0)
+                {
                     goto error;
                 }
                 r->narg = r->rnarg;
                 r->narg_end = p;
                 r->token = NULL;
                 state = SW_NARG_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_NARG_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_REQ_TYPE_LEN;
                 break;
@@ -501,29 +525,39 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_REQ_TYPE_LEN:
-            if (r->token == NULL) {
-                if (ch != '$') {
+            if (r->token == NULL)
+            {
+                if (ch != '$')
+                {
                     goto error;
                 }
                 r->token = p;
                 r->rlen = 0;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rlen = r->rlen * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if (r->rlen == 0 || r->rnarg == 0) {
+            }
+            else if (ch == CR)
+            {
+                if (r->rlen == 0 || r->rnarg == 0)
+                {
                     goto error;
                 }
                 r->rnarg--;
                 r->token = NULL;
                 state = SW_REQ_TYPE_LEN_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_REQ_TYPE_LEN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_REQ_TYPE;
                 break;
@@ -535,18 +569,21 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_REQ_TYPE:
-            if (r->token == NULL) {
+            if (r->token == NULL)
+            {
                 r->token = p;
             }
 
             m = r->token + r->rlen;
-            if (m >= b->last) {
+            if (m >= b->last)
+            {
                 m = b->last - 1;
                 p = m;
                 break;
             }
 
-            if (*m != CR) {
+            if (*m != CR)
+            {
                 goto error;
             }
 
@@ -556,25 +593,30 @@ redis_parse_req(struct msg *r)
             r->token = NULL;
             r->type = MSG_UNKNOWN;
 
-            switch (p - m) {
+            switch (p - m)
+            {
 
             case 3:
-                if (str3icmp(m, 'g', 'e', 't')) {
+                if (str3icmp(m, 'g', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_GET;
                     break;
                 }
 
-                if (str3icmp(m, 's', 'e', 't')) {
+                if (str3icmp(m, 's', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_SET;
                     break;
                 }
 
-                if (str3icmp(m, 't', 't', 'l')) {
+                if (str3icmp(m, 't', 't', 'l'))
+                {
                     r->type = MSG_REQ_REDIS_TTL;
                     break;
                 }
 
-                if (str3icmp(m, 'd', 'e', 'l')) {
+                if (str3icmp(m, 'd', 'e', 'l'))
+                {
                     r->type = MSG_REQ_REDIS_DEL;
                     break;
                 }
@@ -582,133 +624,159 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 4:
-                if (str4icmp(m, 'p', 't', 't', 'l')) {
+                if (str4icmp(m, 'p', 't', 't', 'l'))
+                {
                     r->type = MSG_REQ_REDIS_PTTL;
                     break;
                 }
 
-                if (str4icmp(m, 'd', 'e', 'c', 'r')) {
+                if (str4icmp(m, 'd', 'e', 'c', 'r'))
+                {
                     r->type = MSG_REQ_REDIS_DECR;
                     break;
                 }
 
-                if (str4icmp(m, 'd', 'u', 'm', 'p')) {
+                if (str4icmp(m, 'd', 'u', 'm', 'p'))
+                {
                     r->type = MSG_REQ_REDIS_DUMP;
                     break;
                 }
 
-                if (str4icmp(m, 'h', 'd', 'e', 'l')) {
+                if (str4icmp(m, 'h', 'd', 'e', 'l'))
+                {
                     r->type = MSG_REQ_REDIS_HDEL;
                     break;
                 }
 
-                if (str4icmp(m, 'h', 'g', 'e', 't')) {
+                if (str4icmp(m, 'h', 'g', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_HGET;
                     break;
                 }
 
-                if (str4icmp(m, 'h', 'l', 'e', 'n')) {
+                if (str4icmp(m, 'h', 'l', 'e', 'n'))
+                {
                     r->type = MSG_REQ_REDIS_HLEN;
                     break;
                 }
 
-                if (str4icmp(m, 'h', 's', 'e', 't')) {
+                if (str4icmp(m, 'h', 's', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_HSET;
                     break;
                 }
 
-                if (str4icmp(m, 'i', 'n', 'c', 'r')) {
+                if (str4icmp(m, 'i', 'n', 'c', 'r'))
+                {
                     r->type = MSG_REQ_REDIS_INCR;
                     break;
                 }
 
-                if (str4icmp(m, 'l', 'l', 'e', 'n')) {
+                if (str4icmp(m, 'l', 'l', 'e', 'n'))
+                {
                     r->type = MSG_REQ_REDIS_LLEN;
                     break;
                 }
 
-                if (str4icmp(m, 'l', 'p', 'o', 'p')) {
+                if (str4icmp(m, 'l', 'p', 'o', 'p'))
+                {
                     r->type = MSG_REQ_REDIS_LPOP;
                     break;
                 }
 
-                if (str4icmp(m, 'l', 'r', 'e', 'm')) {
+                if (str4icmp(m, 'l', 'r', 'e', 'm'))
+                {
                     r->type = MSG_REQ_REDIS_LREM;
                     break;
                 }
 
-                if (str4icmp(m, 'l', 's', 'e', 't')) {
+                if (str4icmp(m, 'l', 's', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_LSET;
                     break;
                 }
 
-                if (str4icmp(m, 'r', 'p', 'o', 'p')) {
+                if (str4icmp(m, 'r', 'p', 'o', 'p'))
+                {
                     r->type = MSG_REQ_REDIS_RPOP;
                     break;
                 }
 
-                if (str4icmp(m, 's', 'a', 'd', 'd')) {
+                if (str4icmp(m, 's', 'a', 'd', 'd'))
+                {
                     r->type = MSG_REQ_REDIS_SADD;
                     break;
                 }
 
-                if (str4icmp(m, 's', 'p', 'o', 'p')) {
+                if (str4icmp(m, 's', 'p', 'o', 'p'))
+                {
                     r->type = MSG_REQ_REDIS_SPOP;
                     break;
                 }
 
-                if (str4icmp(m, 's', 'r', 'e', 'm')) {
+                if (str4icmp(m, 's', 'r', 'e', 'm'))
+                {
                     r->type = MSG_REQ_REDIS_SREM;
                     break;
                 }
 
-                if (str4icmp(m, 't', 'y', 'p', 'e')) {
+                if (str4icmp(m, 't', 'y', 'p', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_TYPE;
                     break;
                 }
 
-                if (str4icmp(m, 'm', 'g', 'e', 't')) {
+                if (str4icmp(m, 'm', 'g', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_MGET;
                     break;
                 }
-                if (str4icmp(m, 'm', 's', 'e', 't')) {
+                if (str4icmp(m, 'm', 's', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_MSET;
                     break;
                 }
 
-                if (str4icmp(m, 'z', 'a', 'd', 'd')) {
+                if (str4icmp(m, 'z', 'a', 'd', 'd'))
+                {
                     r->type = MSG_REQ_REDIS_ZADD;
                     break;
                 }
 
-                if (str4icmp(m, 'z', 'r', 'e', 'm')) {
+                if (str4icmp(m, 'z', 'r', 'e', 'm'))
+                {
                     r->type = MSG_REQ_REDIS_ZREM;
                     break;
                 }
 
-                if (str4icmp(m, 'e', 'v', 'a', 'l')) {
+                if (str4icmp(m, 'e', 'v', 'a', 'l'))
+                {
                     r->type = MSG_REQ_REDIS_EVAL;
                     break;
                 }
 
-                if (str4icmp(m, 's', 'o', 'r', 't')) {
+                if (str4icmp(m, 's', 'o', 'r', 't'))
+                {
                     r->type = MSG_REQ_REDIS_SORT;
                     break;
                 }
 
-                if (str4icmp(m, 'p', 'i', 'n', 'g')) {
+                if (str4icmp(m, 'p', 'i', 'n', 'g'))
+                {
                     r->type = MSG_REQ_REDIS_PING;
                     r->noforward = 1;
                     break;
                 }
 
-                if (str4icmp(m, 'q', 'u', 'i', 't')) {
+                if (str4icmp(m, 'q', 'u', 'i', 't'))
+                {
                     r->type = MSG_REQ_REDIS_QUIT;
                     r->quit = 1;
                     break;
                 }
 
-                if (str4icmp(m, 'a', 'u', 't', 'h')) {
+                if (str4icmp(m, 'a', 'u', 't', 'h'))
+                {
                     r->type = MSG_REQ_REDIS_AUTH;
                     r->noforward = 1;
                     break;
@@ -717,92 +785,110 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 5:
-                if (str5icmp(m, 'h', 'k', 'e', 'y', 's')) {
+                if (str5icmp(m, 'h', 'k', 'e', 'y', 's'))
+                {
                     r->type = MSG_REQ_REDIS_HKEYS;
                     break;
                 }
 
-                if (str5icmp(m, 'h', 'm', 'g', 'e', 't')) {
+                if (str5icmp(m, 'h', 'm', 'g', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_HMGET;
                     break;
                 }
 
-                if (str5icmp(m, 'h', 'm', 's', 'e', 't')) {
+                if (str5icmp(m, 'h', 'm', 's', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_HMSET;
                     break;
                 }
 
-                if (str5icmp(m, 'h', 'v', 'a', 'l', 's')) {
+                if (str5icmp(m, 'h', 'v', 'a', 'l', 's'))
+                {
                     r->type = MSG_REQ_REDIS_HVALS;
                     break;
                 }
 
-                if (str5icmp(m, 'h', 's', 'c', 'a', 'n')) {
+                if (str5icmp(m, 'h', 's', 'c', 'a', 'n'))
+                {
                     r->type = MSG_REQ_REDIS_HSCAN;
                     break;
                 }
 
-                if (str5icmp(m, 'l', 'p', 'u', 's', 'h')) {
+                if (str5icmp(m, 'l', 'p', 'u', 's', 'h'))
+                {
                     r->type = MSG_REQ_REDIS_LPUSH;
                     break;
                 }
 
-                if (str5icmp(m, 'l', 't', 'r', 'i', 'm')) {
+                if (str5icmp(m, 'l', 't', 'r', 'i', 'm'))
+                {
                     r->type = MSG_REQ_REDIS_LTRIM;
                     break;
                 }
 
-                if (str5icmp(m, 'r', 'p', 'u', 's', 'h')) {
+                if (str5icmp(m, 'r', 'p', 'u', 's', 'h'))
+                {
                     r->type = MSG_REQ_REDIS_RPUSH;
                     break;
                 }
 
-                if (str5icmp(m, 's', 'c', 'a', 'r', 'd')) {
+                if (str5icmp(m, 's', 'c', 'a', 'r', 'd'))
+                {
                     r->type = MSG_REQ_REDIS_SCARD;
                     break;
                 }
 
-                if (str5icmp(m, 's', 'd', 'i', 'f', 'f')) {
+                if (str5icmp(m, 's', 'd', 'i', 'f', 'f'))
+                {
                     r->type = MSG_REQ_REDIS_SDIFF;
                     break;
                 }
 
-                if (str5icmp(m, 's', 'e', 't', 'e', 'x')) {
+                if (str5icmp(m, 's', 'e', 't', 'e', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_SETEX;
                     break;
                 }
 
-                if (str5icmp(m, 's', 'e', 't', 'n', 'x')) {
+                if (str5icmp(m, 's', 'e', 't', 'n', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_SETNX;
                     break;
                 }
 
-                if (str5icmp(m, 's', 'm', 'o', 'v', 'e')) {
+                if (str5icmp(m, 's', 'm', 'o', 'v', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_SMOVE;
                     break;
                 }
 
-                if (str5icmp(m, 's', 's', 'c', 'a', 'n')) {
+                if (str5icmp(m, 's', 's', 'c', 'a', 'n'))
+                {
                     r->type = MSG_REQ_REDIS_SSCAN;
                     break;
                 }
 
-                if (str5icmp(m, 'z', 'c', 'a', 'r', 'd')) {
+                if (str5icmp(m, 'z', 'c', 'a', 'r', 'd'))
+                {
                     r->type = MSG_REQ_REDIS_ZCARD;
                     break;
                 }
 
-                if (str5icmp(m, 'z', 'r', 'a', 'n', 'k')) {
+                if (str5icmp(m, 'z', 'r', 'a', 'n', 'k'))
+                {
                     r->type = MSG_REQ_REDIS_ZRANK;
                     break;
                 }
 
-                if (str5icmp(m, 'z', 's', 'c', 'a', 'n')) {
+                if (str5icmp(m, 'z', 's', 'c', 'a', 'n'))
+                {
                     r->type = MSG_REQ_REDIS_ZSCAN;
                     break;
                 }
 
-                if (str5icmp(m, 'p', 'f', 'a', 'd', 'd')) {
+                if (str5icmp(m, 'p', 'f', 'a', 'd', 'd'))
+                {
                     r->type = MSG_REQ_REDIS_PFADD;
                     break;
                 }
@@ -810,122 +896,146 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 6:
-                if (str6icmp(m, 'a', 'p', 'p', 'e', 'n', 'd')) {
+                if (str6icmp(m, 'a', 'p', 'p', 'e', 'n', 'd'))
+                {
                     r->type = MSG_REQ_REDIS_APPEND;
                     break;
                 }
 
-                if (str6icmp(m, 'b', 'i', 't', 'p', 'o', 's')) {
+                if (str6icmp(m, 'b', 'i', 't', 'p', 'o', 's'))
+                {
                     r->type = MSG_REQ_REDIS_BITPOS;
                     break;
                 }
 
-                if (str6icmp(m, 'd', 'e', 'c', 'r', 'b', 'y')) {
+                if (str6icmp(m, 'd', 'e', 'c', 'r', 'b', 'y'))
+                {
                     r->type = MSG_REQ_REDIS_DECRBY;
                     break;
                 }
 
-                if (str6icmp(m, 'e', 'x', 'i', 's', 't', 's')) {
+                if (str6icmp(m, 'e', 'x', 'i', 's', 't', 's'))
+                {
                     r->type = MSG_REQ_REDIS_EXISTS;
                     break;
                 }
 
-                if (str6icmp(m, 'e', 'x', 'p', 'i', 'r', 'e')) {
+                if (str6icmp(m, 'e', 'x', 'p', 'i', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_EXPIRE;
                     break;
                 }
 
-                if (str6icmp(m, 'g', 'e', 't', 'b', 'i', 't')) {
+                if (str6icmp(m, 'g', 'e', 't', 'b', 'i', 't'))
+                {
                     r->type = MSG_REQ_REDIS_GETBIT;
                     break;
                 }
 
-                if (str6icmp(m, 'g', 'e', 't', 's', 'e', 't')) {
+                if (str6icmp(m, 'g', 'e', 't', 's', 'e', 't'))
+                {
                     r->type = MSG_REQ_REDIS_GETSET;
                     break;
                 }
 
-                if (str6icmp(m, 'p', 's', 'e', 't', 'e', 'x')) {
+                if (str6icmp(m, 'p', 's', 'e', 't', 'e', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_PSETEX;
                     break;
                 }
 
-                if (str6icmp(m, 'h', 's', 'e', 't', 'n', 'x')) {
+                if (str6icmp(m, 'h', 's', 'e', 't', 'n', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_HSETNX;
                     break;
                 }
 
-                if (str6icmp(m, 'i', 'n', 'c', 'r', 'b', 'y')) {
+                if (str6icmp(m, 'i', 'n', 'c', 'r', 'b', 'y'))
+                {
                     r->type = MSG_REQ_REDIS_INCRBY;
                     break;
                 }
 
-                if (str6icmp(m, 'l', 'i', 'n', 'd', 'e', 'x')) {
+                if (str6icmp(m, 'l', 'i', 'n', 'd', 'e', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_LINDEX;
                     break;
                 }
 
-                if (str6icmp(m, 'l', 'p', 'u', 's', 'h', 'x')) {
+                if (str6icmp(m, 'l', 'p', 'u', 's', 'h', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_LPUSHX;
                     break;
                 }
 
-                if (str6icmp(m, 'l', 'r', 'a', 'n', 'g', 'e')) {
+                if (str6icmp(m, 'l', 'r', 'a', 'n', 'g', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_LRANGE;
                     break;
                 }
 
-                if (str6icmp(m, 'r', 'p', 'u', 's', 'h', 'x')) {
+                if (str6icmp(m, 'r', 'p', 'u', 's', 'h', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_RPUSHX;
                     break;
                 }
 
-                if (str6icmp(m, 's', 'e', 't', 'b', 'i', 't')) {
+                if (str6icmp(m, 's', 'e', 't', 'b', 'i', 't'))
+                {
                     r->type = MSG_REQ_REDIS_SETBIT;
                     break;
                 }
 
-                if (str6icmp(m, 's', 'i', 'n', 't', 'e', 'r')) {
+                if (str6icmp(m, 's', 'i', 'n', 't', 'e', 'r'))
+                {
                     r->type = MSG_REQ_REDIS_SINTER;
                     break;
                 }
 
-                if (str6icmp(m, 's', 't', 'r', 'l', 'e', 'n')) {
+                if (str6icmp(m, 's', 't', 'r', 'l', 'e', 'n'))
+                {
                     r->type = MSG_REQ_REDIS_STRLEN;
                     break;
                 }
 
-                if (str6icmp(m, 's', 'u', 'n', 'i', 'o', 'n')) {
+                if (str6icmp(m, 's', 'u', 'n', 'i', 'o', 'n'))
+                {
                     r->type = MSG_REQ_REDIS_SUNION;
                     break;
                 }
 
-                if (str6icmp(m, 'z', 'c', 'o', 'u', 'n', 't')) {
+                if (str6icmp(m, 'z', 'c', 'o', 'u', 'n', 't'))
+                {
                     r->type = MSG_REQ_REDIS_ZCOUNT;
                     break;
                 }
 
-                if (str6icmp(m, 'z', 'r', 'a', 'n', 'g', 'e')) {
+                if (str6icmp(m, 'z', 'r', 'a', 'n', 'g', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_ZRANGE;
                     break;
                 }
 
-                if (str6icmp(m, 'z', 's', 'c', 'o', 'r', 'e')) {
+                if (str6icmp(m, 'z', 's', 'c', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_ZSCORE;
                     break;
                 }
 
-                if (str6icmp(m, 'u', 'n', 'l', 'i', 'n', 'k')) {
+                if (str6icmp(m, 'u', 'n', 'l', 'i', 'n', 'k'))
+                {
                     r->type = MSG_REQ_REDIS_UNLINK;
                     break;
                 }
 
-                if (str6icmp(m, 'g', 'e', 'o', 'a', 'd', 'd')) {
+                if (str6icmp(m, 'g', 'e', 'o', 'a', 'd', 'd'))
+                {
                     r->type = MSG_REQ_REDIS_GEOADD;
                     break;
                 }
 
-                if (str6icmp(m, 'g', 'e', 'o', 'p', 'o', 's')) {
+                if (str6icmp(m, 'g', 'e', 'o', 'p', 'o', 's'))
+                {
                     r->type = MSG_REQ_REDIS_GEOPOS;
                     break;
                 }
@@ -933,107 +1043,135 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 7:
-                if (str7icmp(m, 'p', 'e', 'r', 's', 'i', 's', 't')) {
+                if (str7icmp(m, 'p', 'e', 'r', 's', 'i', 's', 't'))
+                {
                     r->type = MSG_REQ_REDIS_PERSIST;
                     break;
                 }
 
-                if (str7icmp(m, 'p', 'e', 'x', 'p', 'i', 'r', 'e')) {
+                if (str7icmp(m, 'p', 'e', 'x', 'p', 'i', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_PEXPIRE;
                     break;
                 }
 
-                if (str7icmp(m, 'h', 'e', 'x', 'i', 's', 't', 's')) {
+                if (str7icmp(m, 'h', 'e', 'x', 'i', 's', 't', 's'))
+                {
                     r->type = MSG_REQ_REDIS_HEXISTS;
                     break;
                 }
 
-                if (str7icmp(m, 'h', 'g', 'e', 't', 'a', 'l', 'l')) {
+                if (str7icmp(m, 'h', 'g', 'e', 't', 'a', 'l', 'l'))
+                {
                     r->type = MSG_REQ_REDIS_HGETALL;
                     break;
                 }
 
-                if (str7icmp(m, 'h', 'i', 'n', 'c', 'r', 'b', 'y')) {
+                if (str7icmp(m, 'h', 'i', 'n', 'c', 'r', 'b', 'y'))
+                {
                     r->type = MSG_REQ_REDIS_HINCRBY;
                     break;
                 }
 
-                if (str7icmp(m, 'l', 'i', 'n', 's', 'e', 'r', 't')) {
+                if (str7icmp(m, 'l', 'i', 'n', 's', 'e', 'r', 't'))
+                {
                     r->type = MSG_REQ_REDIS_LINSERT;
                     break;
                 }
 
-                if (str7icmp(m, 'z', 'i', 'n', 'c', 'r', 'b', 'y')) {
+                if (str7icmp(m, 'z', 'i', 'n', 'c', 'r', 'b', 'y'))
+                {
                     r->type = MSG_REQ_REDIS_ZINCRBY;
                     break;
                 }
 
-                if (str7icmp(m, 'e', 'v', 'a', 'l', 's', 'h', 'a')) {
+                if (str7icmp(m, 'e', 'v', 'a', 'l', 's', 'h', 'a'))
+                {
                     r->type = MSG_REQ_REDIS_EVALSHA;
                     break;
                 }
 
-                if (str7icmp(m, 'r', 'e', 's', 't', 'o', 'r', 'e')) {
+                if (str7icmp(m, 'r', 'e', 's', 't', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_RESTORE;
                     break;
                 }
 
-                if (str7icmp(m, 'p', 'f', 'c', 'o', 'u', 'n', 't')) {
+                if (str7icmp(m, 'p', 'f', 'c', 'o', 'u', 'n', 't'))
+                {
                     r->type = MSG_REQ_REDIS_PFCOUNT;
                     break;
                 }
 
-                if (str7icmp(m, 'p', 'f', 'm', 'e', 'r', 'g', 'e')) {
+                if (str7icmp(m, 'p', 'f', 'm', 'e', 'r', 'g', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_PFMERGE;
                     break;
                 }
 
-                if (str7icmp(m, 'g', 'e', 'o', 'h', 'a', 's', 'h')) {
+                if (str7icmp(m, 'g', 'e', 'o', 'h', 'a', 's', 'h'))
+                {
                     r->type = MSG_REQ_REDIS_GEOHASH;
                     break;
                 }
 
-                if (str7icmp(m, 'g', 'e', 'o', 'd', 'i', 's', 't')) {
+                if (str7icmp(m, 'g', 'e', 'o', 'd', 'i', 's', 't'))
+                {
                     r->type = MSG_REQ_REDIS_GEODIST;
                     break;
                 }
 
-                if (str7icmp(m, 's', 'l', 'o', 'w', 'l', 'o', 'g')) {
+                if (str7icmp(m, 's', 'l', 'o', 'w', 'l', 'o', 'g'))
+                {
                     r->type = MSG_REQ_REDIS_SLOWLOG;
                     r->slowlog = 1;
                     r->noforward = 1;
                     break;
                 }
 
+                if (str7icmp(m, 'm', 'o', 'n', 'i', 't', 'o', 'r'))
+                {
+                    r->type = MSG_REQ_REDIS_MONITOR;
+                    r->noforward = 1;
+                    r->monitor = 1;
+                    break;
+                }
+
                 break;
 
             case 8:
-                if (str8icmp(m, 'e', 'x', 'p', 'i', 'r', 'e', 'a', 't')) {
+                if (str8icmp(m, 'e', 'x', 'p', 'i', 'r', 'e', 'a', 't'))
+                {
                     r->type = MSG_REQ_REDIS_EXPIREAT;
                     break;
                 }
 
-                if (str8icmp(m, 'b', 'i', 't', 'c', 'o', 'u', 'n', 't')) {
+                if (str8icmp(m, 'b', 'i', 't', 'c', 'o', 'u', 'n', 't'))
+                {
                     r->type = MSG_REQ_REDIS_BITCOUNT;
                     break;
                 }
 
-                if (str8icmp(m, 'g', 'e', 't', 'r', 'a', 'n', 'g', 'e')) {
+                if (str8icmp(m, 'g', 'e', 't', 'r', 'a', 'n', 'g', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_GETRANGE;
                     break;
                 }
 
-                if (str8icmp(m, 's', 'e', 't', 'r', 'a', 'n', 'g', 'e')) {
+                if (str8icmp(m, 's', 'e', 't', 'r', 'a', 'n', 'g', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_SETRANGE;
                     break;
                 }
 
-                if (str8icmp(m, 's', 'm', 'e', 'm', 'b', 'e', 'r', 's')) {
+                if (str8icmp(m, 's', 'm', 'e', 'm', 'b', 'e', 'r', 's'))
+                {
                     r->type = MSG_REQ_REDIS_SMEMBERS;
                     break;
                 }
 
-                if (str8icmp(m, 'z', 'r', 'e', 'v', 'r', 'a', 'n', 'k')) {
+                if (str8icmp(m, 'z', 'r', 'e', 'v', 'r', 'a', 'n', 'k'))
+                {
                     r->type = MSG_REQ_REDIS_ZREVRANK;
                     break;
                 }
@@ -1041,37 +1179,44 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 9:
-                if (str9icmp(m, 'p', 'e', 'x', 'p', 'i', 'r', 'e', 'a', 't')) {
+                if (str9icmp(m, 'p', 'e', 'x', 'p', 'i', 'r', 'e', 'a', 't'))
+                {
                     r->type = MSG_REQ_REDIS_PEXPIREAT;
                     break;
                 }
 
-                if (str9icmp(m, 'r', 'p', 'o', 'p', 'l', 'p', 'u', 's', 'h')) {
+                if (str9icmp(m, 'r', 'p', 'o', 'p', 'l', 'p', 'u', 's', 'h'))
+                {
                     r->type = MSG_REQ_REDIS_RPOPLPUSH;
                     break;
                 }
 
-                if (str9icmp(m, 's', 'i', 's', 'm', 'e', 'm', 'b', 'e', 'r')) {
+                if (str9icmp(m, 's', 'i', 's', 'm', 'e', 'm', 'b', 'e', 'r'))
+                {
                     r->type = MSG_REQ_REDIS_SISMEMBER;
                     break;
                 }
 
-                if (str9icmp(m, 'z', 'r', 'e', 'v', 'r', 'a', 'n', 'g', 'e')) {
+                if (str9icmp(m, 'z', 'r', 'e', 'v', 'r', 'a', 'n', 'g', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_ZREVRANGE;
                     break;
                 }
 
-                if (str9icmp(m, 'z', 'l', 'e', 'x', 'c', 'o', 'u', 'n', 't')) {
+                if (str9icmp(m, 'z', 'l', 'e', 'x', 'c', 'o', 'u', 'n', 't'))
+                {
                     r->type = MSG_REQ_REDIS_ZLEXCOUNT;
                     break;
                 }
 
-                if (str9icmp(m, 'g', 'e', 'o', 'r', 'a', 'd', 'i', 'u', 's')) {
+                if (str9icmp(m, 'g', 'e', 'o', 'r', 'a', 'd', 'i', 'u', 's'))
+                {
                     r->type = MSG_REQ_REDIS_GEORADIUS;
                     break;
                 }
 
-                if (str9icmp(m ,'g', 'e', 'o', 's', 'e', 'a', 'r', 'c', 'h')) {
+                if (str9icmp(m, 'g', 'e', 'o', 's', 'e', 'a', 'r', 'c', 'h'))
+                {
                     r->type = MSG_REQ_REDIS_GEOSEARCH;
                     break;
                 }
@@ -1079,43 +1224,51 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 10:
-                if (str10icmp(m, 's', 'd', 'i', 'f', 'f', 's', 't', 'o', 'r', 'e')) {
+                if (str10icmp(m, 's', 'd', 'i', 'f', 'f', 's', 't', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_SDIFFSTORE;
                     break;
                 }
 
             case 11:
-                if (str11icmp(m, 'i', 'n', 'c', 'r', 'b', 'y', 'f', 'l', 'o', 'a', 't')) {
+                if (str11icmp(m, 'i', 'n', 'c', 'r', 'b', 'y', 'f', 'l', 'o', 'a', 't'))
+                {
                     r->type = MSG_REQ_REDIS_INCRBYFLOAT;
                     break;
                 }
 
-                if (str11icmp(m, 's', 'i', 'n', 't', 'e', 'r', 's', 't', 'o', 'r', 'e')) {
+                if (str11icmp(m, 's', 'i', 'n', 't', 'e', 'r', 's', 't', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_SINTERSTORE;
                     break;
                 }
 
-                if (str11icmp(m, 's', 'r', 'a', 'n', 'd', 'm', 'e', 'm', 'b', 'e', 'r')) {
+                if (str11icmp(m, 's', 'r', 'a', 'n', 'd', 'm', 'e', 'm', 'b', 'e', 'r'))
+                {
                     r->type = MSG_REQ_REDIS_SRANDMEMBER;
                     break;
                 }
 
-                if (str11icmp(m, 's', 'u', 'n', 'i', 'o', 'n', 's', 't', 'o', 'r', 'e')) {
+                if (str11icmp(m, 's', 'u', 'n', 'i', 'o', 'n', 's', 't', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_SUNIONSTORE;
                     break;
                 }
 
-                if (str11icmp(m, 'z', 'i', 'n', 't', 'e', 'r', 's', 't', 'o', 'r', 'e')) {
+                if (str11icmp(m, 'z', 'i', 'n', 't', 'e', 'r', 's', 't', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_ZINTERSTORE;
                     break;
                 }
 
-                if (str11icmp(m, 'z', 'u', 'n', 'i', 'o', 'n', 's', 't', 'o', 'r', 'e')) {
+                if (str11icmp(m, 'z', 'u', 'n', 'i', 'o', 'n', 's', 't', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_ZUNIONSTORE;
                     break;
                 }
 
-                if (str11icmp(m, 'z', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 'l', 'e', 'x')) {
+                if (str11icmp(m, 'z', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 'l', 'e', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_ZRANGEBYLEX;
                     break;
                 }
@@ -1123,16 +1276,17 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 12:
-                if (str12icmp(m, 'h', 'i', 'n', 'c', 'r', 'b', 'y', 'f', 'l', 'o', 'a', 't')) {
+                if (str12icmp(m, 'h', 'i', 'n', 'c', 'r', 'b', 'y', 'f', 'l', 'o', 'a', 't'))
+                {
                     r->type = MSG_REQ_REDIS_HINCRBYFLOAT;
                     break;
                 }
 
-
                 break;
 
             case 13:
-                if (str13icmp(m, 'z', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 's', 'c', 'o', 'r', 'e')) {
+                if (str13icmp(m, 'z', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 's', 'c', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_ZRANGEBYSCORE;
                     break;
                 }
@@ -1140,12 +1294,14 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 14:
-                if (str14icmp(m, 'z', 'r', 'e', 'm', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 'l', 'e', 'x')) {
+                if (str14icmp(m, 'z', 'r', 'e', 'm', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 'l', 'e', 'x'))
+                {
                     r->type = MSG_REQ_REDIS_ZREMRANGEBYLEX;
                     break;
                 }
 
-                if (str14icmp(m, 'g', 'e', 'o', 's', 'e', 'a', 'r', 'c', 'h', 's', 't', 'o', 'r', 'e')) {
+                if (str14icmp(m, 'g', 'e', 'o', 's', 'e', 'a', 'r', 'c', 'h', 's', 't', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_GEOSEARCHSTORE;
                     break;
                 }
@@ -1153,7 +1309,8 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 15:
-                if (str15icmp(m, 'z', 'r', 'e', 'm', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 'r', 'a', 'n', 'k')) {
+                if (str15icmp(m, 'z', 'r', 'e', 'm', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 'r', 'a', 'n', 'k'))
+                {
                     r->type = MSG_REQ_REDIS_ZREMRANGEBYRANK;
                     break;
                 }
@@ -1161,12 +1318,14 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 16:
-                if (str16icmp(m, 'z', 'r', 'e', 'm', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 's', 'c', 'o', 'r', 'e')) {
+                if (str16icmp(m, 'z', 'r', 'e', 'm', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 's', 'c', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_ZREMRANGEBYSCORE;
                     break;
                 }
 
-                if (str16icmp(m, 'z', 'r', 'e', 'v', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 's', 'c', 'o', 'r', 'e')) {
+                if (str16icmp(m, 'z', 'r', 'e', 'v', 'r', 'a', 'n', 'g', 'e', 'b', 'y', 's', 'c', 'o', 'r', 'e'))
+                {
                     r->type = MSG_REQ_REDIS_ZREVRANGEBYSCORE;
                     break;
                 }
@@ -1174,7 +1333,8 @@ redis_parse_req(struct msg *r)
                 break;
 
             case 17:
-                if (str17icmp(m, 'g', 'e', 'o', 'r', 'a', 'd', 'i', 'u', 's', 'b', 'y', 'm', 'e', 'm', 'b', 'e', 'r')) {
+                if (str17icmp(m, 'g', 'e', 'o', 'r', 'a', 'd', 'i', 'u', 's', 'b', 'y', 'm', 'e', 'm', 'b', 'e', 'r'))
+                {
                     r->type = MSG_REQ_REDIS_GEORADIUSBYMEMBER;
                     break;
                 }
@@ -1183,7 +1343,8 @@ redis_parse_req(struct msg *r)
                 break;
             }
 
-            if (r->type == MSG_UNKNOWN) {
+            if (r->type == MSG_UNKNOWN)
+            {
                 log_error("parsed unsupported command '%.*s'", p - m, m);
                 r->noforward = 1;
                 // goto error;
@@ -1195,15 +1356,23 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_REQ_TYPE_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
-                if (redis_argz(r)) {
+                if (redis_argz(r))
+                {
                     goto done;
-                } else if (r->narg == 1) {
+                }
+                else if (r->narg == 1)
+                {
                     goto error;
-                } else if (redis_argeval(r)) {
+                }
+                else if (redis_argeval(r))
+                {
                     state = SW_ARG1_LEN;
-                } else {
+                }
+                else
+                {
                     state = SW_KEY_LEN;
                 }
                 break;
@@ -1215,36 +1384,48 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_KEY_LEN:
-            if (r->token == NULL) {
-                if (ch != '$') {
+            if (r->token == NULL)
+            {
+                if (ch != '$')
+                {
                     goto error;
                 }
                 r->token = p;
                 r->rlen = 0;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rlen = r->rlen * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if (r->rlen >= mbuf_data_size()) {
-                    log_error("parsed bad req %"PRIu64" of type %d with key "
+            }
+            else if (ch == CR)
+            {
+                if (r->rlen >= mbuf_data_size())
+                {
+                    log_error("parsed bad req %" PRIu64 " of type %d with key "
                               "length %d that greater than or equal to maximum"
-                              " redis key length of %d", r->id, r->type,
+                              " redis key length of %d",
+                              r->id, r->type,
                               r->rlen, mbuf_data_size());
                     goto error;
                 }
-                if (r->rnarg == 0) {
+                if (r->rnarg == 0)
+                {
                     goto error;
                 }
                 r->rnarg--;
                 r->token = NULL;
                 state = SW_KEY_LEN_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_KEY_LEN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_KEY;
                 break;
@@ -1256,29 +1437,35 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_KEY:
-            if (r->token == NULL) {
+            if (r->token == NULL)
+            {
                 r->token = p;
             }
 
             m = r->token + r->rlen;
-            if (m >= b->last) {
+            if (m >= b->last)
+            {
                 m = b->last - 1;
                 p = m;
                 break;
             }
 
-            if (*m != CR) {
+            if (*m != CR)
+            {
                 goto error;
-            } else {        /* got a key */
+            }
+            else
+            { /* got a key */
                 struct keypos *kpos;
 
-                p = m;      /* move forward by rlen bytes */
+                p = m; /* move forward by rlen bytes */
                 r->rlen = 0;
                 m = r->token;
                 r->token = NULL;
 
                 kpos = array_push(r->keys);
-                if (kpos == NULL) {
+                if (kpos == NULL)
+                {
                     goto enomem;
                 }
                 kpos->start = m;
@@ -1290,54 +1477,83 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_KEY_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
-                if (redis_arg0(r)) {
-                    if (r->rnarg != 0) {
+                if (redis_arg0(r))
+                {
+                    if (r->rnarg != 0)
+                    {
                         goto error;
                     }
                     goto done;
-                } else if (redis_arg1(r)) {
-                    if (r->rnarg != 1) {
+                }
+                else if (redis_arg1(r))
+                {
+                    if (r->rnarg != 1)
+                    {
                         goto error;
                     }
                     state = SW_ARG1_LEN;
-                } else if (redis_arg2(r)) {
-                    if (r->rnarg != 2) {
+                }
+                else if (redis_arg2(r))
+                {
+                    if (r->rnarg != 2)
+                    {
                         goto error;
                     }
                     state = SW_ARG1_LEN;
-                } else if (redis_arg3(r)) {
-                    if (r->rnarg != 3) {
+                }
+                else if (redis_arg3(r))
+                {
+                    if (r->rnarg != 3)
+                    {
                         goto error;
                     }
                     state = SW_ARG1_LEN;
-                } else if (redis_argn(r)) {
-                    if (r->rnarg == 0) {
+                }
+                else if (redis_argn(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_ARG1_LEN;
-                } else if (redis_argx(r) || redis_ncarg(r)) {
-                    if (r->rnarg == 0) {
+                }
+                else if (redis_argx(r) || redis_ncarg(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_KEY_LEN;
-                } else if (redis_argkvx(r)) {
-                    if (r->narg % 2 == 0) {
+                }
+                else if (redis_argkvx(r))
+                {
+                    if (r->narg % 2 == 0)
+                    {
                         goto error;
                     }
                     state = SW_ARG1_LEN;
-                } else if (redis_argeval(r)) {
-                    if (r->rnarg == 0) {
+                }
+                else if (redis_argeval(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_ARGN_LEN;
-                } else if (redis_unkonw_command(r)) {
-                    if (r->rnarg == 0) {
+                }
+                else if (redis_unkonw_command(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_ARGN_LEN;
-                } else {
+                }
+                else
+                {
                     goto error;
                 }
 
@@ -1350,32 +1566,43 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARG1_LEN:
-            if (r->token == NULL) {
-                if (ch != '$') {
+            if (r->token == NULL)
+            {
+                if (ch != '$')
+                {
                     goto error;
                 }
                 r->rlen = 0;
                 r->token = p;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rlen = r->rlen * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if ((p - r->token) <= 1 || r->rnarg == 0) {
+            }
+            else if (ch == CR)
+            {
+                if ((p - r->token) <= 1 || r->rnarg == 0)
+                {
                     goto error;
                 }
                 r->rnarg--;
                 r->token = NULL;
                 state = SW_ARG1_LEN_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_ARG1_LEN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_ARG1;
-                if (r->rlen > r->max_rlen) {
+                if (r->rlen > r->max_rlen)
+                {
                     r->max_rlen = r->rlen;
                 }
                 break;
@@ -1388,14 +1615,16 @@ redis_parse_req(struct msg *r)
 
         case SW_ARG1:
             m = p + r->rlen;
-            if (m >= b->last) {
+            if (m >= b->last)
+            {
                 r->rlen -= (uint32_t)(b->last - p);
                 m = b->last - 1;
                 p = m;
                 break;
             }
 
-            if (*m != CR) {
+            if (*m != CR)
+            {
                 goto error;
             }
 
@@ -1407,39 +1636,59 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARG1_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
-                if (redis_arg1(r)) {
-                    if (r->rnarg != 0) {
+                if (redis_arg1(r))
+                {
+                    if (r->rnarg != 0)
+                    {
                         goto error;
                     }
                     goto done;
-                } else if (redis_arg2(r)) {
-                    if (r->rnarg != 1) {
+                }
+                else if (redis_arg2(r))
+                {
+                    if (r->rnarg != 1)
+                    {
                         goto error;
                     }
                     state = SW_ARG2_LEN;
-                } else if (redis_arg3(r)) {
-                    if (r->rnarg != 2) {
+                }
+                else if (redis_arg3(r))
+                {
+                    if (r->rnarg != 2)
+                    {
                         goto error;
                     }
                     state = SW_ARG2_LEN;
-                } else if (redis_argn(r)) {
-                    if (r->rnarg == 0) {
+                }
+                else if (redis_argn(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_ARGN_LEN;
-                } else if (redis_argeval(r)) {
-                    if (r->rnarg < 2) {
+                }
+                else if (redis_argeval(r))
+                {
+                    if (r->rnarg < 2)
+                    {
                         goto error;
                     }
                     state = SW_ARG2_LEN;
-                } else if (redis_argkvx(r)) {
-                    if (r->rnarg == 0) {
+                }
+                else if (redis_argkvx(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_KEY_LEN;
-                } else {
+                }
+                else
+                {
                     goto error;
                 }
 
@@ -1452,32 +1701,43 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARG2_LEN:
-            if (r->token == NULL) {
-                if (ch != '$') {
+            if (r->token == NULL)
+            {
+                if (ch != '$')
+                {
                     goto error;
                 }
                 r->rlen = 0;
                 r->token = p;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rlen = r->rlen * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if ((p - r->token) <= 1 || r->rnarg == 0) {
+            }
+            else if (ch == CR)
+            {
+                if ((p - r->token) <= 1 || r->rnarg == 0)
+                {
                     goto error;
                 }
                 r->rnarg--;
                 r->token = NULL;
                 state = SW_ARG2_LEN_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_ARG2_LEN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_ARG2;
-                if (r->rlen > r->max_rlen) {
+                if (r->rlen > r->max_rlen)
+                {
                     r->max_rlen = r->rlen;
                 }
                 break;
@@ -1489,7 +1749,8 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARG2:
-            if (r->token == NULL && redis_argeval(r)) {
+            if (r->token == NULL && redis_argeval(r))
+            {
                 /*
                  * For EVAL/EVALSHA, ARG2 represents the # key/arg pairs which must
                  * be tokenized and stored in contiguous memory.
@@ -1498,11 +1759,13 @@ redis_parse_req(struct msg *r)
             }
 
             m = p + r->rlen;
-            if (m >= b->last) {
+            if (m >= b->last)
+            {
                 /* For EVAL/EVALHASH, the r->token has been assigned a value. When 
                  * m > b->last will due to repair mbuf, so only r->token == NULL, 
                  * need caculate r->rlen again. */
-                if (r->token == NULL) {
+                if (r->token == NULL)
+                {
                     r->rlen -= (uint32_t)(b->last - p);
                 }
                 m = b->last - 1;
@@ -1510,14 +1773,16 @@ redis_parse_req(struct msg *r)
                 break;
             }
 
-            if (*m != CR) {
+            if (*m != CR)
+            {
                 goto error;
             }
 
             p = m; /* move forward by rlen bytes */
             r->rlen = 0;
 
-            if (redis_argeval(r)) {
+            if (redis_argeval(r))
+            {
                 uint32_t nkey;
                 uint8_t *chp;
 
@@ -1528,18 +1793,24 @@ redis_parse_req(struct msg *r)
                  * both p and m point to the end of the argument and r->token
                  * points to the start.
                  */
-                if (p - r->token < 1) {
+                if (p - r->token < 1)
+                {
                     goto error;
                 }
 
-                for (nkey = 0, chp = r->token; chp < p; chp++) {
-                    if (isdigit(*chp)) {
+                for (nkey = 0, chp = r->token; chp < p; chp++)
+                {
+                    if (isdigit(*chp))
+                    {
                         nkey = nkey * 10 + (uint32_t)(*chp - '0');
-                    } else {
+                    }
+                    else
+                    {
                         goto error;
                     }
                 }
-                if (nkey == 0) {
+                if (nkey == 0)
+                {
                     goto error;
                 }
 
@@ -1551,29 +1822,43 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARG2_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
-                if (redis_arg2(r)) {
-                    if (r->rnarg != 0) {
+                if (redis_arg2(r))
+                {
+                    if (r->rnarg != 0)
+                    {
                         goto error;
                     }
                     goto done;
-                } else if (redis_arg3(r)) {
-                    if (r->rnarg != 1) {
+                }
+                else if (redis_arg3(r))
+                {
+                    if (r->rnarg != 1)
+                    {
                         goto error;
                     }
                     state = SW_ARG3_LEN;
-                } else if (redis_argn(r)) {
-                    if (r->rnarg == 0) {
+                }
+                else if (redis_argn(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_ARGN_LEN;
-                } else if (redis_argeval(r)) {
-                    if (r->rnarg < 1) {
+                }
+                else if (redis_argeval(r))
+                {
+                    if (r->rnarg < 1)
+                    {
                         goto error;
                     }
                     state = SW_KEY_LEN;
-                } else {
+                }
+                else
+                {
                     goto error;
                 }
 
@@ -1586,32 +1871,43 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARG3_LEN:
-            if (r->token == NULL) {
-                if (ch != '$') {
+            if (r->token == NULL)
+            {
+                if (ch != '$')
+                {
                     goto error;
                 }
                 r->rlen = 0;
                 r->token = p;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rlen = r->rlen * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if ((p - r->token) <= 1 || r->rnarg == 0) {
+            }
+            else if (ch == CR)
+            {
+                if ((p - r->token) <= 1 || r->rnarg == 0)
+                {
                     goto error;
                 }
                 r->rnarg--;
                 r->token = NULL;
                 state = SW_ARG3_LEN_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_ARG3_LEN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_ARG3;
-                if (r->rlen > r->max_rlen) {
+                if (r->rlen > r->max_rlen)
+                {
                     r->max_rlen = r->rlen;
                 }
                 break;
@@ -1624,14 +1920,16 @@ redis_parse_req(struct msg *r)
 
         case SW_ARG3:
             m = p + r->rlen;
-            if (m >= b->last) {
+            if (m >= b->last)
+            {
                 r->rlen -= (uint32_t)(b->last - p);
                 m = b->last - 1;
                 p = m;
                 break;
             }
 
-            if (*m != CR) {
+            if (*m != CR)
+            {
                 goto error;
             }
 
@@ -1642,19 +1940,27 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARG3_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
-                if (redis_arg3(r)) {
-                    if (r->rnarg != 0) {
+                if (redis_arg3(r))
+                {
+                    if (r->rnarg != 0)
+                    {
                         goto error;
                     }
                     goto done;
-                } else if (redis_argn(r)) {
-                    if (r->rnarg == 0) {
+                }
+                else if (redis_argn(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_ARGN_LEN;
-                } else {
+                }
+                else
+                {
                     goto error;
                 }
 
@@ -1667,32 +1973,43 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARGN_LEN:
-            if (r->token == NULL) {
-                if (ch != '$') {
+            if (r->token == NULL)
+            {
+                if (ch != '$')
+                {
                     goto error;
                 }
                 r->rlen = 0;
                 r->token = p;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rlen = r->rlen * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if ((p - r->token) <= 1 || r->rnarg == 0) {
+            }
+            else if (ch == CR)
+            {
+                if ((p - r->token) <= 1 || r->rnarg == 0)
+                {
                     goto error;
                 }
                 r->rnarg--;
                 r->token = NULL;
                 state = SW_ARGN_LEN_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_ARGN_LEN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_ARGN;
-                if (r->rlen > r->max_rlen) {
+                if (r->rlen > r->max_rlen)
+                {
                     r->max_rlen = r->rlen;
                 }
                 break;
@@ -1705,14 +2022,16 @@ redis_parse_req(struct msg *r)
 
         case SW_ARGN:
             m = p + r->rlen;
-            if (m >= b->last) {
+            if (m >= b->last)
+            {
                 r->rlen -= (uint32_t)(b->last - p);
                 m = b->last - 1;
                 p = m;
                 break;
             }
 
-            if (*m != CR) {
+            if (*m != CR)
+            {
                 goto error;
             }
 
@@ -1723,14 +2042,19 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_ARGN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
-                if (redis_argn(r) || redis_argeval(r) || redis_unkonw_command(r)) {
-                    if (r->rnarg == 0) {
+                if (redis_argn(r) || redis_argeval(r) || redis_unkonw_command(r))
+                {
+                    if (r->rnarg == 0)
+                    {
                         goto done;
                     }
                     state = SW_ARGN_LEN;
-                } else {
+                }
+                else
+                {
                     goto error;
                 }
 
@@ -1753,16 +2077,20 @@ redis_parse_req(struct msg *r)
     r->pos = p;
     r->state = state;
 
-    if (b->last == b->end && r->token != NULL) {
+    if (b->last == b->end && r->token != NULL)
+    {
         r->pos = r->token;
         r->token = NULL;
         r->result = MSG_PARSE_REPAIR;
-    } else {
+    }
+    else
+    {
         r->result = MSG_PARSE_AGAIN;
     }
 
-    log_hexdump(LOG_VERB, b->pos, mbuf_length(b), "parsed req %"PRIu64" res %d "
-                "type %d state %d rpos %d of %d", r->id, r->result, r->type,
+    log_hexdump(LOG_VERB, b->pos, mbuf_length(b), "parsed req %" PRIu64 " res %d "
+                                                  "type %d state %d rpos %d of %d",
+                r->id, r->result, r->type,
                 r->state, r->pos - b->pos, b->last - b->pos);
     return;
 
@@ -1774,8 +2102,9 @@ done:
     r->token = NULL;
     r->result = MSG_PARSE_OK;
 
-    log_hexdump(LOG_VERB, b->pos, mbuf_length(b), "parsed req %"PRIu64" res %d "
-                "type %d state %d rpos %d of %d", r->id, r->result, r->type,
+    log_hexdump(LOG_VERB, b->pos, mbuf_length(b), "parsed req %" PRIu64 " res %d "
+                                                  "type %d state %d rpos %d of %d",
+                r->id, r->result, r->type,
                 r->state, r->pos - b->pos, b->last - b->pos);
     return;
 
@@ -1783,8 +2112,9 @@ enomem:
     r->result = MSG_PARSE_ERROR;
     r->state = state;
 
-    log_hexdump(LOG_INFO, b->pos, mbuf_length(b), "out of memory on parse req %"PRIu64" "
-                "res %d type %d state %d", r->id, r->result, r->type, r->state);
+    log_hexdump(LOG_INFO, b->pos, mbuf_length(b), "out of memory on parse req %" PRIu64 " "
+                                                  "res %d type %d state %d",
+                r->id, r->result, r->type, r->state);
 
     return;
 
@@ -1793,8 +2123,9 @@ error:
     r->state = state;
     errno = EINVAL;
 
-    log_hexdump(LOG_INFO, b->pos, mbuf_length(b), "parsed bad req %"PRIu64" "
-                "res %d type %d state %d", r->id, r->result, r->type,
+    log_hexdump(LOG_INFO, b->pos, mbuf_length(b), "parsed bad req %" PRIu64 " "
+                                                  "res %d type %d state %d",
+                r->id, r->result, r->type,
                 r->state);
 }
 
@@ -1826,14 +2157,14 @@ error:
  *     strings (bulks) with the initial line indicating how many bulks that
  *     will follow. The first byte of a multi bulk reply is always *.
  */
-void
-redis_parse_rsp(struct msg *r)
+void redis_parse_rsp(struct msg *r)
 {
     struct mbuf *b;
     uint8_t *p, *m;
     uint8_t ch;
 
-    enum {
+    enum
+    {
         SW_START,
         SW_STATUS,
         SW_ERROR,
@@ -1867,13 +2198,16 @@ redis_parse_rsp(struct msg *r)
     ASSERT(r->pos != NULL);
     ASSERT(r->pos >= b->pos && r->pos <= b->last);
 
-    for (p = r->pos; p < b->last; p++) {
+    for (p = r->pos; p < b->last; p++)
+    {
         ch = *p;
 
-        switch (state) {
+        switch (state)
+        {
         case SW_START:
             r->type = MSG_UNKNOWN;
-            switch (ch) {
+            switch (ch)
+            {
             case '+':
                 p = p - 1; /* go back by 1 byte */
                 r->type = MSG_RSP_REDIS_STATUS;
@@ -1916,17 +2250,21 @@ redis_parse_rsp(struct msg *r)
             break;
 
         case SW_ERROR:
-            if (r->token == NULL) {
-                if (ch != '-') {
+            if (r->token == NULL)
+            {
+                if (ch != '-')
+                {
                     goto error;
                 }
-              /* rsp_start <- p */
-              r->token = p;
+                /* rsp_start <- p */
+                r->token = p;
             }
-            if (ch == ' ' || ch == CR) {
+            if (ch == ' ' || ch == CR)
+            {
                 m = r->token;
                 r->token = NULL;
-                switch (p - m) {
+                switch (p - m)
+                {
 
                 case 4:
                     /*
@@ -1935,13 +2273,15 @@ redis_parse_rsp(struct msg *r)
                      * -ERR source and destination objects are the same\r\n
                      * -ERR index out of range\r\n
                      */
-                    if (str4cmp(m, '-', 'E', 'R', 'R')) {
+                    if (str4cmp(m, '-', 'E', 'R', 'R'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_ERR;
                         break;
                     }
 
                     /* -OOM command not allowed when used memory > 'maxmemory'.\r\n */
-                    if (str4cmp(m, '-', 'O', 'O', 'M')) {
+                    if (str4cmp(m, '-', 'O', 'O', 'M'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_OOM;
                         break;
                     }
@@ -1950,7 +2290,8 @@ redis_parse_rsp(struct msg *r)
 
                 case 5:
                     /* -BUSY Redis is busy running a script. You can only call SCRIPT KILL or SHUTDOWN NOSAVE.\r\n" */
-                    if (str5cmp(m, '-', 'B', 'U', 'S', 'Y')) {
+                    if (str5cmp(m, '-', 'B', 'U', 'S', 'Y'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_BUSY;
                         break;
                     }
@@ -1959,7 +2300,8 @@ redis_parse_rsp(struct msg *r)
 
                 case 7:
                     /* -NOAUTH Authentication required.\r\n */
-                    if (str7cmp(m, '-', 'N', 'O', 'A', 'U', 'T', 'H')) {
+                    if (str7cmp(m, '-', 'N', 'O', 'A', 'U', 'T', 'H'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_NOAUTH;
                         break;
                     }
@@ -1968,19 +2310,22 @@ redis_parse_rsp(struct msg *r)
 
                 case 8:
                     /* rsp: "-LOADING Redis is loading the dataset in memory\r\n" */
-                    if (str8cmp(m, '-', 'L', 'O', 'A', 'D', 'I', 'N', 'G')) {
+                    if (str8cmp(m, '-', 'L', 'O', 'A', 'D', 'I', 'N', 'G'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_LOADING;
                         break;
                     }
 
                     /* -BUSYKEY Target key name already exists.\r\n */
-                    if (str8cmp(m, '-', 'B', 'U', 'S', 'Y', 'K', 'E', 'Y')) {
+                    if (str8cmp(m, '-', 'B', 'U', 'S', 'Y', 'K', 'E', 'Y'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_BUSYKEY;
                         break;
                     }
 
                     /* "-MISCONF Redis is configured to save RDB snapshots, but is currently not able to persist on disk. Commands that may modify the data set are disabled. Please check Redis logs for details about the error.\r\n" */
-                    if (str8cmp(m, '-', 'M', 'I', 'S', 'C', 'O', 'N', 'F')) {
+                    if (str8cmp(m, '-', 'M', 'I', 'S', 'C', 'O', 'N', 'F'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_MISCONF;
                         break;
                     }
@@ -1989,13 +2334,15 @@ redis_parse_rsp(struct msg *r)
 
                 case 9:
                     /* -NOSCRIPT No matching script. Please use EVAL.\r\n */
-                    if (str9cmp(m, '-', 'N', 'O', 'S', 'C', 'R', 'I', 'P', 'T')) {
+                    if (str9cmp(m, '-', 'N', 'O', 'S', 'C', 'R', 'I', 'P', 'T'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_NOSCRIPT;
                         break;
                     }
 
                     /* -READONLY You can't write against a read only slave.\r\n */
-                    if (str9cmp(m, '-', 'R', 'E', 'A', 'D', 'O', 'N', 'L', 'Y')) {
+                    if (str9cmp(m, '-', 'R', 'E', 'A', 'D', 'O', 'N', 'L', 'Y'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_READONLY;
                         break;
                     }
@@ -2004,13 +2351,15 @@ redis_parse_rsp(struct msg *r)
 
                 case 10:
                     /* -WRONGTYPE Operation against a key holding the wrong kind of value\r\n */
-                    if (str10cmp(m, '-', 'W', 'R', 'O', 'N', 'G', 'T', 'Y', 'P', 'E')) {
+                    if (str10cmp(m, '-', 'W', 'R', 'O', 'N', 'G', 'T', 'Y', 'P', 'E'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_WRONGTYPE;
                         break;
                     }
 
                     /* -EXECABORT Transaction discarded because of previous errors.\r\n" */
-                    if (str10cmp(m, '-', 'E', 'X', 'E', 'C', 'A', 'B', 'O', 'R', 'T')) {
+                    if (str10cmp(m, '-', 'E', 'X', 'E', 'C', 'A', 'B', 'O', 'R', 'T'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_EXECABORT;
                         break;
                     }
@@ -2019,13 +2368,15 @@ redis_parse_rsp(struct msg *r)
 
                 case 11:
                     /* -MASTERDOWN Link with MASTER is down and slave-serve-stale-data is set to 'no'.\r\n */
-                    if (str11cmp(m, '-', 'M', 'A', 'S', 'T', 'E', 'R', 'D', 'O', 'W', 'N')) {
+                    if (str11cmp(m, '-', 'M', 'A', 'S', 'T', 'E', 'R', 'D', 'O', 'W', 'N'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_MASTERDOWN;
                         break;
                     }
 
                     /* -NOREPLICAS Not enough good slaves to write.\r\n */
-                    if (str11cmp(m, '-', 'N', 'O', 'R', 'E', 'P', 'L', 'I', 'C', 'A', 'S')) {
+                    if (str11cmp(m, '-', 'N', 'O', 'R', 'E', 'P', 'L', 'I', 'C', 'A', 'S'))
+                    {
                         r->type = MSG_RSP_REDIS_ERROR_NOREPLICAS;
                         break;
                     }
@@ -2044,25 +2395,34 @@ redis_parse_rsp(struct msg *r)
             break;
 
         case SW_SIMPLE:
-            if (ch == CR) {
-              state = SW_MULTIBULK_ARGN_LF;
+            if (ch == CR)
+            {
+                state = SW_MULTIBULK_ARGN_LF;
             }
             break;
 
         case SW_INTEGER_START:
-            if (ch == CR) {
+            if (ch == CR)
+            {
                 state = SW_ALMOST_DONE;
-            } else if (ch == '-') {
+            }
+            else if (ch == '-')
+            {
                 ;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->integer = r->integer * 10 + (uint32_t)(ch - '0');
-            } else {
+            }
+            else
+            {
                 goto error;
             }
             break;
 
         case SW_RUNTO_CRLF:
-            switch (ch) {
+            switch (ch)
+            {
             case CR:
                 state = SW_ALMOST_DONE;
                 break;
@@ -2074,7 +2434,8 @@ redis_parse_rsp(struct msg *r)
             break;
 
         case SW_ALMOST_DONE:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 /* rsp_end <- p */
                 goto done;
@@ -2086,32 +2447,44 @@ redis_parse_rsp(struct msg *r)
             break;
 
         case SW_BULK:
-            if (r->token == NULL) {
-                if (ch != '$') {
+            if (r->token == NULL)
+            {
+                if (ch != '$')
+                {
                     goto error;
                 }
                 /* rsp_start <- p */
                 r->token = p;
                 r->rlen = 0;
-            } else if (ch == '-') {
+            }
+            else if (ch == '-')
+            {
                 /* handles null bulk reply = '$-1' */
                 state = SW_RUNTO_CRLF;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rlen = r->rlen * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if ((p - r->token) <= 1) {
+            }
+            else if (ch == CR)
+            {
+                if ((p - r->token) <= 1)
+                {
                     goto error;
                 }
                 r->token = NULL;
                 state = SW_BULK_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_BULK_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_BULK_ARG;
                 break;
@@ -2124,14 +2497,16 @@ redis_parse_rsp(struct msg *r)
 
         case SW_BULK_ARG:
             m = p + r->rlen;
-            if (m >= b->last) {
+            if (m >= b->last)
+            {
                 r->rlen -= (uint32_t)(b->last - p);
                 m = b->last - 1;
                 p = m;
                 break;
             }
 
-            if (*m != CR) {
+            if (*m != CR)
+            {
                 goto error;
             }
 
@@ -2143,7 +2518,8 @@ redis_parse_rsp(struct msg *r)
             break;
 
         case SW_BULK_ARG_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 goto done;
 
@@ -2154,42 +2530,58 @@ redis_parse_rsp(struct msg *r)
             break;
 
         case SW_MULTIBULK:
-            if (r->token == NULL) {
-                if (ch != '*') {
+            if (r->token == NULL)
+            {
+                if (ch != '*')
+                {
                     goto error;
                 }
                 r->token = p;
                 /* rsp_start <- p */
                 r->narg_start = p;
                 r->rnarg = 0;
-            } else if (ch == '-') {
+            }
+            else if (ch == '-')
+            {
                 state = SW_RUNTO_CRLF;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rnarg = r->rnarg * 10 + (uint32_t)(ch - '0');
-            } else if (ch == CR) {
-                if ((p - r->token) <= 1) {
+            }
+            else if (ch == CR)
+            {
+                if ((p - r->token) <= 1)
+                {
                     goto error;
                 }
 
-                if (r->narg == 0) {
+                if (r->narg == 0)
+                {
                     r->narg = r->rnarg;
-                } else {
-                    r->narg += (r->rnarg-1);
+                }
+                else
+                {
+                    r->narg += (r->rnarg - 1);
                 }
 
                 r->narg_end = p;
                 r->token = NULL;
                 state = SW_MULTIBULK_NARG_LF;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_MULTIBULK_NARG_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
-                if (r->rnarg == 0) {
+                if (r->rnarg == 0)
+                {
                     /* response is '*0\r\n' */
                     goto done;
                 }
@@ -2204,7 +2596,8 @@ redis_parse_rsp(struct msg *r)
             break;
 
         case SW_MULTIBULK_ARGN_LEN:
-            if (r->token == NULL) {
+            if (r->token == NULL)
+            {
                 /*
                  * From: http://redis.io/topics/protocol, a multi bulk reply
                  * is used to return an array of other replies. Every element
@@ -2229,49 +2622,65 @@ redis_parse_rsp(struct msg *r)
                  * we can handle it like tail-recursive.
                  *
                  */
-                if (ch == '*') {    /* for sscan/hscan/zscan only */
-                    p = p - 1;      /* go back by 1 byte */
+                if (ch == '*')
+                {              /* for sscan/hscan/zscan only */
+                    p = p - 1; /* go back by 1 byte */
                     state = SW_MULTIBULK;
                     break;
                 }
 
-                if (ch == ':' || ch == '+' || ch == '-') {
+                if (ch == ':' || ch == '+' || ch == '-')
+                {
                     /* handles not-found reply = '$-1' or integer reply = ':<num>' */
                     /* and *2\r\n$2\r\nr0\r\n+OK\r\n or *1\r\n+OK\r\n */
                     state = SW_SIMPLE;
                     break;
                 }
 
-                if (ch != '$') {
+                if (ch != '$')
+                {
                     goto error;
                 }
 
                 r->token = p;
                 r->rlen = 0;
-            } else if (isdigit(ch)) {
+            }
+            else if (isdigit(ch))
+            {
                 r->rlen = r->rlen * 10 + (uint32_t)(ch - '0');
-            } else if (ch == '-') {
+            }
+            else if (ch == '-')
+            {
                 ;
-            } else if (ch == CR) {
-                if ((p - r->token) <= 1 || r->rnarg == 0) {
+            }
+            else if (ch == CR)
+            {
+                if ((p - r->token) <= 1 || r->rnarg == 0)
+                {
                     goto error;
                 }
 
-                if ((r->rlen == 1 && (p - r->token) == 3)) {
+                if ((r->rlen == 1 && (p - r->token) == 3))
+                {
                     r->rlen = 0;
                     state = SW_MULTIBULK_ARGN_LF;
-                } else {
+                }
+                else
+                {
                     state = SW_MULTIBULK_ARGN_LEN_LF;
                 }
                 r->token = NULL;
-            } else {
+            }
+            else
+            {
                 goto error;
             }
 
             break;
 
         case SW_MULTIBULK_ARGN_LEN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 state = SW_MULTIBULK_ARGN;
                 break;
@@ -2284,14 +2693,16 @@ redis_parse_rsp(struct msg *r)
 
         case SW_MULTIBULK_ARGN:
             m = p + r->rlen;
-            if (m >= b->last) {
+            if (m >= b->last)
+            {
                 r->rlen -= (uint32_t)(b->last - p);
                 m = b->last - 1;
                 p = m;
                 break;
             }
 
-            if (*m != CR) {
+            if (*m != CR)
+            {
                 goto error;
             }
 
@@ -2303,13 +2714,14 @@ redis_parse_rsp(struct msg *r)
             break;
 
         case SW_MULTIBULK_ARGN_LF:
-            switch (ch) {
+            switch (ch)
+            {
             case LF:
                 r->curr_narg++;
-                if (r->narg == r->curr_narg) {
+                if (r->narg == r->curr_narg)
+                {
                     goto done;
                 }
-
 
                 state = SW_MULTIBULK_ARGN_LEN;
                 break;
@@ -2331,16 +2743,20 @@ redis_parse_rsp(struct msg *r)
     r->pos = p;
     r->state = state;
 
-    if (b->last == b->end && r->token != NULL) {
+    if (b->last == b->end && r->token != NULL)
+    {
         r->pos = r->token;
         r->token = NULL;
         r->result = MSG_PARSE_REPAIR;
-    } else {
+    }
+    else
+    {
         r->result = MSG_PARSE_AGAIN;
     }
 
-    log_hexdump(LOG_VERB, b->pos, mbuf_length(b), "parsed rsp %"PRIu64" res %d "
-                "type %d state %d rpos %d of %d", r->id, r->result, r->type,
+    log_hexdump(LOG_VERB, b->pos, mbuf_length(b), "parsed rsp %" PRIu64 " res %d "
+                                                  "type %d state %d rpos %d of %d",
+                r->id, r->result, r->type,
                 r->state, r->pos - b->pos, b->last - b->pos);
     return;
 
@@ -2352,8 +2768,9 @@ done:
     r->token = NULL;
     r->result = MSG_PARSE_OK;
 
-    log_hexdump(LOG_VERB, b->pos, mbuf_length(b), "parsed rsp %"PRIu64" res %d "
-                "type %d state %d rpos %d of %d", r->id, r->result, r->type,
+    log_hexdump(LOG_VERB, b->pos, mbuf_length(b), "parsed rsp %" PRIu64 " res %d "
+                                                  "type %d state %d rpos %d of %d",
+                r->id, r->result, r->type,
                 r->state, r->pos - b->pos, b->last - b->pos);
     return;
 
@@ -2362,8 +2779,9 @@ error:
     r->state = state;
     errno = EINVAL;
 
-    log_hexdump(LOG_INFO, b->pos, mbuf_length(b), "parsed bad rsp %"PRIu64" "
-                "res %d type %d state %d", r->id, r->result, r->type,
+    log_hexdump(LOG_INFO, b->pos, mbuf_length(b), "parsed bad rsp %" PRIu64 " "
+                                                  "res %d type %d state %d",
+                r->id, r->result, r->type,
                 r->state);
 }
 
@@ -2380,12 +2798,12 @@ error:
  *
  * See issue: https://github.com/twitter/twemproxy/issues/369
  */
-bool
-redis_failure(struct msg *r)
+bool redis_failure(struct msg *r)
 {
     ASSERT(!r->request);
 
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_RSP_REDIS_ERROR_OOM:
     case MSG_RSP_REDIS_ERROR_BUSY:
     case MSG_RSP_REDIS_ERROR_LOADING:
@@ -2415,14 +2833,16 @@ redis_copy_bulk(struct msg *dst, struct msg *src)
 
     for (mbuf = STAILQ_FIRST(&src->mhdr);
          mbuf && mbuf_empty(mbuf);
-         mbuf = STAILQ_FIRST(&src->mhdr)) {
+         mbuf = STAILQ_FIRST(&src->mhdr))
+    {
 
         mbuf_remove(&src->mhdr, mbuf);
         mbuf_put(mbuf);
     }
 
     mbuf = STAILQ_FIRST(&src->mhdr);
-    if (mbuf == NULL) {
+    if (mbuf == NULL)
+    {
         return NC_ERROR;
     }
 
@@ -2430,12 +2850,16 @@ redis_copy_bulk(struct msg *dst, struct msg *src)
     ASSERT(*p == '$');
     p++;
 
-    if (p[0] == '-' && p[1] == '1') {
-        len = 1 + 2 + CRLF_LEN;             /* $-1\r\n */
+    if (p[0] == '-' && p[1] == '1')
+    {
+        len = 1 + 2 + CRLF_LEN; /* $-1\r\n */
         p = mbuf->pos + len;
-    } else {
+    }
+    else
+    {
         len = 0;
-        for (; p < mbuf->last && isdigit(*p); p++) {
+        for (; p < mbuf->last && isdigit(*p); p++)
+        {
             len = len * 10 + (uint32_t)(*p - '0');
         }
         len += CRLF_LEN * 2;
@@ -2444,21 +2868,30 @@ redis_copy_bulk(struct msg *dst, struct msg *src)
     bytes = len;
 
     /* copy len bytes to dst */
-    for (; mbuf;) {
-        if (mbuf_length(mbuf) <= len) {     /* steal this buf from src to dst */
+    for (; mbuf;)
+    {
+        if (mbuf_length(mbuf) <= len)
+        { /* steal this buf from src to dst */
             nbuf = STAILQ_NEXT(mbuf, next);
             mbuf_remove(&src->mhdr, mbuf);
-            if (dst != NULL) {
+            if (dst != NULL)
+            {
                 mbuf_insert(&dst->mhdr, mbuf);
-            } else {
+            }
+            else
+            {
                 mbuf_put(mbuf);
             }
             len -= mbuf_length(mbuf);
             mbuf = nbuf;
-        } else {                             /* split it */
-            if (dst != NULL) {
+        }
+        else
+        { /* split it */
+            if (dst != NULL)
+            {
                 status = msg_append(dst, mbuf->pos, len);
-                if (status != NC_OK) {
+                if (status != NC_OK)
+                {
                     return status;
                 }
             }
@@ -2467,7 +2900,8 @@ redis_copy_bulk(struct msg *dst, struct msg *src)
         }
     }
 
-    if (dst != NULL) {
+    if (dst != NULL)
+    {
         dst->mlen += bytes;
     }
     src->mlen -= bytes;
@@ -2480,8 +2914,7 @@ redis_copy_bulk(struct msg *dst, struct msg *src)
  * the fragmented multi vector request - 'mget' or 'del' and all the
  * responses to the fragmented request vector hasn't been received
  */
-void
-redis_pre_coalesce(struct msg *r)
+void redis_pre_coalesce(struct msg *r)
 {
     struct msg *pr = r->peer; /* peer request */
     struct mbuf *mbuf;
@@ -2489,16 +2922,18 @@ redis_pre_coalesce(struct msg *r)
     ASSERT(!r->request);
     ASSERT(pr->request);
 
-    if (pr->frag_id == 0) {
+    if (pr->frag_id == 0)
+    {
         /* do nothing, if not a response to a fragmented request */
         return;
     }
     pr->frag_owner->nfrag_done++;
 
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_RSP_REDIS_INTEGER:
         /* only redis 'del' fragmented request sends back integer reply */
-        ASSERT(pr->type == MSG_REQ_REDIS_DEL || pr-type == MSG_REQ_REDIS_UNLINK);
+        ASSERT(pr->type == MSG_REQ_REDIS_DEL || pr->type == MSG_REQ_REDIS_UNLINK);
 
         mbuf = STAILQ_FIRST(&r->mhdr);
         /*
@@ -2538,7 +2973,8 @@ redis_pre_coalesce(struct msg *r)
         break;
 
     case MSG_RSP_REDIS_STATUS:
-        if (pr->type == MSG_REQ_REDIS_MSET) {       /* MSET segments */
+        if (pr->type == MSG_REQ_REDIS_MSET)
+        { /* MSET segments */
             mbuf = STAILQ_FIRST(&r->mhdr);
             r->mlen -= mbuf_length(mbuf);
             mbuf_rewind(mbuf);
@@ -2553,7 +2989,8 @@ redis_pre_coalesce(struct msg *r)
          */
         mbuf = STAILQ_FIRST(&r->mhdr);
         log_hexdump(LOG_ERR, mbuf->pos, mbuf_length(mbuf), "rsp fragment "
-                    "with unknown type %d", r->type);
+                                                           "with unknown type %d",
+                    r->type);
         pr->error = 1;
         pr->err = EINVAL;
         break;
@@ -2571,7 +3008,8 @@ redis_append_key(struct msg *r, uint8_t *key, uint32_t keylen)
     /* 1. keylen */
     len = (uint32_t)nc_snprintf(printbuf, sizeof(printbuf), "$%d\r\n", keylen);
     mbuf = msg_ensure_mbuf(r, len);
-    if (mbuf == NULL) {
+    if (mbuf == NULL)
+    {
         return NC_ENOMEM;
     }
     mbuf_copy(mbuf, printbuf, len);
@@ -2579,12 +3017,14 @@ redis_append_key(struct msg *r, uint8_t *key, uint32_t keylen)
 
     /* 2. key */
     mbuf = msg_ensure_mbuf(r, keylen);
-    if (mbuf == NULL) {
+    if (mbuf == NULL)
+    {
         return NC_ENOMEM;
     }
 
     kpos = array_push(r->keys);
-    if (kpos == NULL) {
+    if (kpos == NULL)
+    {
         return NC_ENOMEM;
     }
 
@@ -2595,7 +3035,8 @@ redis_append_key(struct msg *r, uint8_t *key, uint32_t keylen)
 
     /* 3. CRLF */
     mbuf = msg_ensure_mbuf(r, CRLF_LEN);
-    if (mbuf == NULL) {
+    if (mbuf == NULL)
+    {
         return NC_ENOMEM;
     }
     mbuf_copy(mbuf, (uint8_t *)CRLF, CRLF_LEN);
@@ -2668,13 +3109,15 @@ redis_fragment_argx(struct msg *r, uint32_t ncontinuum, struct msg_tqh *frag_msg
     ASSERT(array_n(r->keys) == (r->narg - 1) / key_step);
 
     sub_msgs = nc_zalloc(ncontinuum * sizeof(*sub_msgs));
-    if (sub_msgs == NULL) {
+    if (sub_msgs == NULL)
+    {
         return NC_ENOMEM;
     }
 
     ASSERT(r->frag_seq == NULL);
     r->frag_seq = nc_alloc(array_n(r->keys) * sizeof(*r->frag_seq));
-    if (r->frag_seq == NULL) {
+    if (r->frag_seq == NULL)
+    {
         nc_free(sub_msgs);
         return NC_ENOMEM;
     }
@@ -2688,8 +3131,10 @@ redis_fragment_argx(struct msg *r, uint32_t ncontinuum, struct msg_tqh *frag_msg
      * This is always true because we have capped our MBUF_MIN_SIZE at 512 and
      * whenever we have multiple messages, we copy the tail message into a new mbuf
      */
-    for (i = 0; i < 3; i++) {                 /* eat *narg\r\n$4\r\nMGET\r\n */
-        for (; *(mbuf->pos) != '\n';) {
+    for (i = 0; i < 3; i++)
+    { /* eat *narg\r\n$4\r\nMGET\r\n */
+        for (; *(mbuf->pos) != '\n';)
+        {
             mbuf->pos++;
         }
         mbuf->pos++;
@@ -2699,14 +3144,17 @@ redis_fragment_argx(struct msg *r, uint32_t ncontinuum, struct msg_tqh *frag_msg
     r->nfrag = 0;
     r->frag_owner = r;
 
-    for (i = 0; i < array_n(r->keys); i++) {        /* for each key */
+    for (i = 0; i < array_n(r->keys); i++)
+    { /* for each key */
         struct msg *sub_msg;
         struct keypos *kpos = array_get(r->keys, i);
         uint32_t idx = msg_backend_idx(r, kpos->start, kpos->end - kpos->start);
 
-        if (sub_msgs[idx] == NULL) {
+        if (sub_msgs[idx] == NULL)
+        {
             sub_msgs[idx] = msg_get(r->owner, r->request, r->redis);
-            if (sub_msgs[idx] == NULL) {
+            if (sub_msgs[idx] == NULL)
+            {
                 nc_free(sub_msgs);
                 return NC_ENOMEM;
             }
@@ -2715,22 +3163,28 @@ redis_fragment_argx(struct msg *r, uint32_t ncontinuum, struct msg_tqh *frag_msg
 
         sub_msg->narg++;
         status = redis_append_key(sub_msg, kpos->start, kpos->end - kpos->start);
-        if (status != NC_OK) {
+        if (status != NC_OK)
+        {
             nc_free(sub_msgs);
             return status;
         }
 
-        if (key_step == 1) {                            /* mget,del */
+        if (key_step == 1)
+        { /* mget,del */
             continue;
-        } else {                                        /* mset */
-            status = redis_copy_bulk(NULL, r);          /* eat key */
-            if (status != NC_OK) {
+        }
+        else
+        {                                      /* mset */
+            status = redis_copy_bulk(NULL, r); /* eat key */
+            if (status != NC_OK)
+            {
                 nc_free(sub_msgs);
                 return status;
             }
 
             status = redis_copy_bulk(sub_msg, r);
-            if (status != NC_OK) {
+            if (status != NC_OK)
+            {
                 nc_free(sub_msgs);
                 return status;
             }
@@ -2739,28 +3193,40 @@ redis_fragment_argx(struct msg *r, uint32_t ncontinuum, struct msg_tqh *frag_msg
         }
     }
 
-    for (i = 0; i < ncontinuum; i++) {     /* prepend mget header, and forward it */
+    for (i = 0; i < ncontinuum; i++)
+    { /* prepend mget header, and forward it */
         struct msg *sub_msg = sub_msgs[i];
-        if (sub_msg == NULL) {
+        if (sub_msg == NULL)
+        {
             continue;
         }
 
-        if (r->type == MSG_REQ_REDIS_MGET) {
+        if (r->type == MSG_REQ_REDIS_MGET)
+        {
             status = msg_prepend_format(sub_msg, "*%d\r\n$4\r\nmget\r\n",
                                         sub_msg->narg + 1);
-        } else if (r->type == MSG_REQ_REDIS_DEL) {
+        }
+        else if (r->type == MSG_REQ_REDIS_DEL)
+        {
             status = msg_prepend_format(sub_msg, "*%d\r\n$3\r\ndel\r\n",
                                         sub_msg->narg + 1);
-        } else if (r->type == MSG_REQ_REDIS_UNLINK) {
+        }
+        else if (r->type == MSG_REQ_REDIS_UNLINK)
+        {
             status = msg_prepend_format(sub_msg, "*%d\r\n$6\r\nunlink\r\n",
                                         sub_msg->narg + 1);
-        } else if (r->type == MSG_REQ_REDIS_MSET) {
+        }
+        else if (r->type == MSG_REQ_REDIS_MSET)
+        {
             status = msg_prepend_format(sub_msg, "*%d\r\n$4\r\nmset\r\n",
                                         sub_msg->narg + 1);
-        } else {
+        }
+        else
+        {
             NOT_REACHED();
         }
-        if (status != NC_OK) {
+        if (status != NC_OK)
+        {
             nc_free(sub_msgs);
             return status;
         }
@@ -2780,11 +3246,13 @@ redis_fragment_argx(struct msg *r, uint32_t ncontinuum, struct msg_tqh *frag_msg
 rstatus_t
 redis_fragment(struct msg *r, uint32_t ncontinuum, struct msg_tqh *frag_msgq)
 {
-    if (1 == array_n(r->keys)){
+    if (1 == array_n(r->keys))
+    {
         return NC_OK;
     }
 
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_MGET:
     case MSG_REQ_REDIS_DEL:
     case MSG_REQ_REDIS_UNLINK:
@@ -2809,37 +3277,46 @@ redis_handle_slowlog(struct msg *r, struct server_pool *sp)
 
     struct keypos *sub = array_get(r->keys, 0);
 
-    if (nc_strncasecmp(sub->start, "get", sub->end - sub->start)) {
+    if (nc_strncasecmp(sub->start, "get", sub->end - sub->start))
+    {
         return msg_append(response, rsp_command_err.data, rsp_command_err.len);
     }
 
     /* fast return */
-    if (slowlog_empty(sp)) {
+    if (slowlog_empty(sp))
+    {
         return msg_append(response, rsp_null_reply.data, rsp_null_reply.len);
     }
 
     struct keypos *nlog = array_get(r->keys, 1);
     n = nc_atoi(nlog->start, (nlog->end - nlog->start));
-    if (n > sp->n_slowlog) {
+    if (n > sp->n_slowlog)
+    {
         n = sp->n_slowlog;
     }
 
     /* append header */
     string_printf(&header, "*%d\r\n", n);
     ret = msg_append_full(response, header.data, header.len);
-    if (ret != NC_OK) {
+    if (ret != NC_OK)
+    {
         string_deinit(&header);
         return ret;
     }
 
-    TAILQ_FOREACH(slog, &sp->slowlog_q, slowlog_tqe) {
-        if (i >= n) break;
-        if (string_empty(&slog->slowlog_str)) {
+    TAILQ_FOREACH(slog, &sp->slowlog_q, slowlog_tqe)
+    {
+        if (i >= n)
+            break;
+        if (string_empty(&slog->slowlog_str))
+        {
             ret = redis_slowlog_str(slog);
-            if (ret != NC_OK) break;
+            if (ret != NC_OK)
+                break;
         }
         ret = msg_append_full(response, slog->slowlog_str.data, slog->slowlog_str.len);
-        if (ret != NC_OK) break;
+        if (ret != NC_OK)
+            break;
         ++i;
     }
 
@@ -2858,23 +3335,28 @@ redis_reply(struct msg *r)
     ASSERT(sp != NULL);
 
     c_conn = response->owner;
-    if (r->type == MSG_REQ_REDIS_AUTH) {
+    if (r->type == MSG_REQ_REDIS_AUTH)
+    {
         return redis_handle_auth_req(r, response);
     }
 
-    if (!conn_authenticated(c_conn)) {
+    if (!conn_authenticated(c_conn))
+    {
         return msg_append(response, rsp_auth_required.data, rsp_auth_required.len);
     }
 
-    if (r->nralimit) {
+    if (r->nralimit)
+    {
         return msg_append(response, sp->rkl_resp.data, sp->rkl_resp.len);
     }
 
-    if (r->nrlenlimit) {
+    if (r->nrlenlimit)
+    {
         return msg_append(response, sp->mrlen_resp.data, sp->mrlen_resp.len);
     }
 
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_PING:
         return msg_append(response, rsp_pong.data, rsp_pong.len);
     case MSG_REQ_REDIS_SLOWLOG:
@@ -2888,27 +3370,27 @@ redis_reply(struct msg *r)
     }
 }
 
-void
-redis_post_coalesce_mset(struct msg *request)
+void redis_post_coalesce_mset(struct msg *request)
 {
     rstatus_t status;
     struct msg *response = request->peer;
 
     status = msg_append(response, rsp_ok.data, rsp_ok.len);
-    if (status != NC_OK) {
-        response->error = 1;        /* mark this msg as err */
+    if (status != NC_OK)
+    {
+        response->error = 1; /* mark this msg as err */
         response->err = errno;
     }
 }
 
-void
-redis_post_coalesce_del(struct msg *request)
+void redis_post_coalesce_del(struct msg *request)
 {
     struct msg *response = request->peer;
     rstatus_t status;
 
     status = msg_prepend_format(response, ":%d\r\n", request->integer);
-    if (status != NC_OK) {
+    if (status != NC_OK)
+    {
         response->error = 1;
         response->err = errno;
     }
@@ -2923,7 +3405,8 @@ redis_post_coalesce_mget(struct msg *request)
     uint32_t i;
 
     status = msg_prepend_format(response, "*%d\r\n", request->narg - 1);
-    if (status != NC_OK) {
+    if (status != NC_OK)
+    {
         /*
          * the fragments is still in c_conn->omsg_q, we have to discard all of them,
          * we just close the conn here
@@ -2932,14 +3415,17 @@ redis_post_coalesce_mget(struct msg *request)
         return;
     }
 
-    for (i = 0; i < array_n(request->keys); i++) {      /* for each key */
-        sub_msg = request->frag_seq[i]->peer;           /* get it's peer response */
-        if (sub_msg == NULL) {
+    for (i = 0; i < array_n(request->keys); i++)
+    {                                         /* for each key */
+        sub_msg = request->frag_seq[i]->peer; /* get it's peer response */
+        if (sub_msg == NULL)
+        {
             response->owner->err = 1;
             return;
         }
         status = redis_copy_bulk(response, sub_msg);
-        if (status != NC_OK) {
+        if (status != NC_OK)
+        {
             response->owner->err = 1;
             return;
         }
@@ -2952,19 +3438,20 @@ redis_post_coalesce_mget(struct msg *request)
  * responses to the fragmented request vector has been received and
  * the fragmented request is consider to be done
  */
-void
-redis_post_coalesce(struct msg *r)
+void redis_post_coalesce(struct msg *r)
 {
     struct msg *pr = r->peer; /* peer response */
 
     ASSERT(!pr->request);
     ASSERT(r->request && (r->frag_owner == r));
-    if (r->error || r->ferror) {
+    if (r->error || r->ferror)
+    {
         /* do nothing, if msg is in error */
         return;
     }
 
-    switch (r->type) {
+    switch (r->type)
+    {
     case MSG_REQ_REDIS_MGET:
         return redis_post_coalesce_mget(r);
 
@@ -2994,7 +3481,8 @@ redis_handle_auth_req(struct msg *req, struct msg *rsp)
 
     pool = (struct server_pool *)conn->owner;
 
-    if (!pool->require_auth) {
+    if (!pool->require_auth)
+    {
         /*
          * AUTH command from the client in absence of a redis_auth:
          * directive should be treated as an error
@@ -3006,8 +3494,11 @@ redis_handle_auth_req(struct msg *req, struct msg *rsp)
     key = kpos->start;
     keylen = (uint32_t)(kpos->end - kpos->start);
     valid = (keylen == pool->redis_auth.len) &&
-            (memcmp(pool->redis_auth.data, key, keylen) == 0) ? true : false;
-    if (valid) {
+                    (memcmp(pool->redis_auth.data, key, keylen) == 0)
+                ? true
+                : false;
+    if (valid)
+    {
         conn->authenticated = 1;
         return msg_append(rsp, rsp_ok.data, rsp_ok.len);
     }
@@ -3036,14 +3527,16 @@ redis_add_auth(struct context *ctx, struct conn *c_conn, struct conn *s_conn)
     pool = c_conn->owner;
 
     msg = msg_get(c_conn, true, c_conn->redis);
-    if (msg == NULL) {
+    if (msg == NULL)
+    {
         c_conn->err = errno;
         return NC_ENOMEM;
     }
 
     status = msg_prepend_format(msg, "*2\r\n$4\r\nAUTH\r\n$%d\r\n%s\r\n",
                                 pool->redis_auth.len, pool->redis_auth.data);
-    if (status != NC_OK) {
+    if (status != NC_OK)
+    {
         msg_put(msg);
         return status;
     }
@@ -3055,8 +3548,7 @@ redis_add_auth(struct context *ctx, struct conn *c_conn, struct conn *s_conn)
     return NC_OK;
 }
 
-void
-redis_post_connect(struct context *ctx, struct conn *conn, struct server *server)
+void redis_post_connect(struct context *ctx, struct conn *conn, struct server *server)
 {
     rstatus_t status;
     struct server_pool *pool = server->owner;
@@ -3072,7 +3564,8 @@ redis_post_connect(struct context *ctx, struct conn *conn, struct server *server
      * a request 'SELECT <redis_db>', where <redis_db> is the configured
      * on a per pool basis in the configuration
      */
-    if (pool->redis_db <= 0) {
+    if (pool->redis_db <= 0)
+    {
         return;
     }
 
@@ -3082,13 +3575,15 @@ redis_post_connect(struct context *ctx, struct conn *conn, struct server *server
      * that triggered the connect.
      */
     msg = msg_get(conn, true, conn->redis);
-    if (msg == NULL) {
+    if (msg == NULL)
+    {
         return;
     }
 
     digits = (pool->redis_db >= 10) ? (int)log10(pool->redis_db) + 1 : 1;
     status = msg_prepend_format(msg, "*2\r\n$6\r\nSELECT\r\n$%d\r\n%d\r\n", digits, pool->redis_db);
-    if (status != NC_OK) {
+    if (status != NC_OK)
+    {
         msg_put(msg);
         return;
     }
@@ -3105,14 +3600,14 @@ redis_post_connect(struct context *ctx, struct conn *conn, struct server *server
               pool->name.data, server->name.data);
 }
 
-void
-redis_swallow_msg(struct conn *conn, struct msg *pmsg, struct msg *msg)
+void redis_swallow_msg(struct conn *conn, struct msg *pmsg, struct msg *msg)
 {
     if (pmsg != NULL && pmsg->type == MSG_REQ_REDIS_SELECT &&
-        msg != NULL && redis_error(msg)) {
-        struct server* conn_server;
-        struct server_pool* conn_pool;
-        struct mbuf* rsp_buffer;
+        msg != NULL && redis_error(msg))
+    {
+        struct server *conn_server;
+        struct server_pool *conn_pool;
+        struct mbuf *rsp_buffer;
         uint8_t message[128];
         size_t copy_len;
 
@@ -3120,7 +3615,7 @@ redis_swallow_msg(struct conn *conn, struct msg *pmsg, struct msg *msg)
          * Get a substring from the message so that the initial - and the trailing
          * \r\n is removed.
          */
-        conn_server = (struct server*)conn->owner;
+        conn_server = (struct server *)conn->owner;
         conn_pool = conn_server->owner;
         rsp_buffer = STAILQ_LAST(&msg->mhdr, mbuf, next);
         copy_len = MIN(mbuf_length(rsp_buffer) - 3, sizeof(message) - 1);
@@ -3138,14 +3633,13 @@ rstatus_t
 redis_slowlog_str(struct slowlog *slog)
 {
     return string_printf(&slog->slowlog_str,
-            "*7\r\n:%lld\r\n:%lld\r\n:%lld\r\n$%d\r\n%s\r\n"
-            "$%d\r\n%s\r\n$%d\r\n%s\r\n:%u\r\n",
-            slog->id,
-            slog->time,
-            slog->duration,
-            slog->iport.len, slog->iport.data,
-            slog->req_type.len, slog->req_type.data, 
-            slog->key0.len, slog->key0.data, 
-            slog->req_nargs);
-
+                         "*7\r\n:%lld\r\n:%lld\r\n:%lld\r\n$%d\r\n%s\r\n"
+                         "$%d\r\n%s\r\n$%d\r\n%s\r\n:%u\r\n",
+                         slog->id,
+                         slog->time,
+                         slog->duration,
+                         slog->iport.len, slog->iport.data,
+                         slog->req_type.len, slog->req_type.data,
+                         slog->key0.len, slog->key0.data,
+                         slog->req_nargs);
 }
