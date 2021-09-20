@@ -1,5 +1,13 @@
 /*
  * kemproxy - A fast and lightweight proxy for memcached protocol.
+ * kemproxy is fork form twitter/twemproxy.
+ * 
+/*
+ * kemproxy - A fast and lightweight proxy for memcached protocol.
+ * kemproxy is fork form twitter/twemproxy.
+ * 
+ * Copyright (C) 2021, wei huang <wei.kukey@gmail.com>
+ * All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
